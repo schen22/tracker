@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, MapPin, Calendar, Plus, Check, X, Home, Coffee, Trash2, TrendingUp, Target } from 'lucide-react';
+import { Clock, Calendar, Trash2, TrendingUp, Target } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 const PuppyTracker = () => {
@@ -199,18 +199,6 @@ const PuppyTracker = () => {
     ].filter(item => item.value > 0);
 
     return distribution;
-  };
-
-  const getActivityIcon = (type) => {
-    switch(type) {
-      case 'potty': return '🚽';
-      case 'meal': return '🍽️';
-      case 'play': return '🎾';
-      case 'crate': return '🏠';
-      case 'training': return '🎯';
-      case 'social': return '👨‍👩‍👧‍👦';
-      default: return '📝';
-    }
   };
 
   return (

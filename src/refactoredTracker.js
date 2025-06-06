@@ -6,6 +6,8 @@ import { PuppyProfile } from './models/PuppyData';
 import QuickActions from './components/QuickActions';
 import TodaySummary from './components/TodaySummary';
 import TrendAnalysis from './components/TrendAnalysis';
+import MilestoneCard from './components/MilestoneCard';
+import { Clock, Calendar, Target } from 'lucide-react';
 
 const PuppyTracker = () => {
   const [dataService] = useState(() => new DataService());
@@ -40,6 +42,33 @@ const PuppyTracker = () => {
           🐕 {puppyProfile.name} Tracker
         </h1>
         {/* Date/time controls */}
+        <div className="flex items-center gap-4 text-gray-600">
+          <div className="flex items-center gap-1">
+            <Clock className="w-4 h-4" />
+            <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+          {/* <div className="flex items-center gap-1">
+            <Calendar className="w-4 h-4" />
+            <input 
+              type="date" 
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="border rounded px-2 py-1"
+            />
+          </div> */}
+          <div className="flex items-center gap-1">
+            <Target className="w-4 h-4" />
+            <select 
+              value={puppyProfile.ageWeeks} 
+              onChange={(e) => setPuppyProfile('Artoo', parseInt(e.target.value))}
+              className="border rounded px-2 py-1"
+            >
+              {Array.from({ length: 17 }, (_, i) => i + 8).map(week => (
+                <option key={week} value={week}>{week} weeks old</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -54,6 +83,12 @@ const PuppyTracker = () => {
           successRate={insightsService.getSuccessRateForDate(selectedDate)}
         />
 
+        <MilestoneCard
+          title={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).title}
+          goals={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).goals}
+          tips={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).tips}
+        />
+        
         <TrendAnalysis 
           insightsService={insightsService}
           selectedDate={selectedDate}

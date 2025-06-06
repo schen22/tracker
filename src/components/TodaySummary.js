@@ -58,28 +58,24 @@ const TodaySummary = ({ pottyLogs, activities, successRate }) => {
       {/* Potty Stats Grid */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <SummaryCard
-          title="Successful Pees"
           value={stats.successfulPees}
           subtitle="Successful Pees"
           bgColor="bg-blue-50"
           textColor="text-blue-600"
         />
         <SummaryCard
-          title="Successful Poops"
           value={stats.successfulPoops}
           subtitle="Successful Poops"
           bgColor="bg-green-50"
           textColor="text-green-600"
         />
         <SummaryCard
-          title="Accidents"
           value={stats.accidents}
           subtitle="Accidents"
           bgColor="bg-red-50"
           textColor="text-red-600"
         />
         <SummaryCard
-          title="Total Events"
           value={stats.totalEvents}
           subtitle="Total Events"
           bgColor="bg-gray-50"

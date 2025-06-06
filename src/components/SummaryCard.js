@@ -1,6 +1,6 @@
 import React from 'react';
 
-const SummaryCard = ({ title, value, subtitle, bgColor, textColor }) => {
+const SummaryCard = ({ value, subtitle, bgColor, textColor }) => {
   return (
     <div className={`${bgColor} p-3 rounded-lg text-center`}>
       <div className={`text-2xl font-bold ${textColor}`}>

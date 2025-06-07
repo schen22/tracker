@@ -1,4 +1,4 @@
-import { scaleLog } from "d3-scale";
+// import { scaleLog } from "d3-scale";
 
 class DataService {
   constructor() {

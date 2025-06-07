@@ -47,6 +47,9 @@ const PuppyTracker = () => {
   const [error, setError] = useState(dataService.getError());
   const [lastRefresh, setLastRefresh] = useState(dataService.getLastRefresh());
 
+  // ADD: Operation tracking for race condition prevention
+  const [pendingOperations, setPendingOperations] = useState(new Set());
+
   // Create InsightsService instance using useMemo to ensure it updates when data changes
   const insightsService = useMemo(() => {
     console.log("Creating new InsightsService with data:", data);
@@ -98,36 +101,77 @@ const PuppyTracker = () => {
     };
   }, [dataService]);
 
-  // Event handlers
+  // ENHANCED: Event handlers with operation tracking
   const handleAddPottyLog = async (type, location, notes) => {
-    const success = await dataService.addPottyLog(type, location, notes);
-    if (success) {
-      setCurrentTime(new Date()); // Trigger re-render for UI updates
+    const operationId = `add_potty_${Date.now()}`;
+    setPendingOperations(prev => new Set([...prev, operationId]));
+
+    try {
+      const success = await dataService.addPottyLog(type, location, notes);
+      return success;
+    } finally {
+      setPendingOperations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(operationId);
+        return newSet;
+      });
     }
   };
 
   const handleAddActivity = async (activity, duration) => {
-    const success = await dataService.addActivity(activity, duration);
-    if (success) {
-      setCurrentTime(new Date()); // Trigger re-render for UI updates
+    const operationId = `add_activity_${Date.now()}`;
+    setPendingOperations(prev => new Set([...prev, operationId]));
+
+    try {
+      const success = await dataService.addActivity(activity, duration);
+      return success;
+    } finally {
+      setPendingOperations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(operationId);
+        return newSet;
+      });
     }
   };
 
   const handleDeletePottyLog = async logId => {
-    const success = await dataService.deletePottyLog(logId);
-    if (success) {
-      setCurrentTime(new Date());
+    const operationId = `delete_potty_${logId}`;
+    setPendingOperations(prev => new Set([...prev, operationId]));
+
+    try {
+      const success = await dataService.deletePottyLog(logId);
+      return success;
+    } finally {
+      setPendingOperations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(operationId);
+        return newSet;
+      });
     }
   };
 
   const handleDeleteActivity = async activityId => {
-    const success = await dataService.deleteActivity(activityId);
-    if (success) {
-      setCurrentTime(new Date());
+    const operationId = `delete_activity_${activityId}`;
+    setPendingOperations(prev => new Set([...prev, operationId]));
+
+    try {
+      const success = await dataService.deleteActivity(activityId);
+      return success;
+    } finally {
+      setPendingOperations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(operationId);
+        return newSet;
+      });
     }
   };
 
-  const handleRefreshData = () => {
+  const handleRefreshData = async () => {
+    // Wait for pending operations before refreshing
+    while (pendingOperations.size > 0) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
     dataService.loadData();
     setLastRefresh(new Date());
   };
@@ -140,15 +184,50 @@ const PuppyTracker = () => {
     dataService.checkConnection();
   };
 
+  // Compute values using latest state
   // Computed values using the service methods
   const filteredPottyLogs = dataService.getPottyLogsByDate(selectedDate);
   const filteredActivities = dataService.getActivitiesByDate(selectedDate);
   const successRate = dataService.calculateSuccessRateForDate(selectedDate);
 
+  // const filteredPottyLogs = useMemo(() => {
+  //   return dataService.getPottyLogsByDate(selectedDate);
+  // }, [dataService, selectedDate]);
+
+  // const filteredActivities = useMemo(() => {
+  //   return dataService.getActivitiesByDate(selectedDate);
+  // }, [dataService, selectedDate]);
+
+  // const successRate = useMemo(() => {
+  //   return dataService.calculateSuccessRateForDate(selectedDate);
+  // }, [dataService, selectedDate]);
+
   // Update puppy age when profile changes
   const handleAgeChange = newAge => {
     setPuppyProfile(new PuppyProfile("Artoo", parseInt(newAge)));
   };
+
+  // log and track data consistency
+  useEffect(() => {
+    console.log("Data state updated:", {
+      pottyLogsCount: data.pottyLogs?.length || 0,
+      activitiesCount: data.activities?.length || 0,
+      lastUpdated: data.lastUpdated,
+      selectedDate,
+      filteredPottyLogsCount: filteredPottyLogs.length,
+      filteredActivitiesCount: filteredActivities.length,
+      pendingOperations: pendingOperations.size // ADD: Track pending operations
+    });
+  }, [
+    data,
+    selectedDate,
+    filteredPottyLogs,
+    filteredActivities,
+    pendingOperations
+  ]);
+
+  // ADD: Check if any operations are pending
+  const isOperationPending = pendingOperations.size > 0;
 
   return (
     <div className="max-w-6xl mx-auto p-4 bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
@@ -191,6 +270,16 @@ const PuppyTracker = () => {
             )}
           </div>
         </div>
+
+        {/* ADD: Operation Status Indicator */}
+        {isOperationPending && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2">
+            <div className="animate-spin w-4 h-4 border-2 border-yellow-300 border-t-yellow-600 rounded-full"></div>
+            <span className="text-yellow-700">
+              Processing operation... ({pendingOperations.size} pending)
+            </span>
+          </div>
+        )}
 
         {/* Error Display */}
         {error && (
@@ -279,7 +368,7 @@ const PuppyTracker = () => {
               <button
                 onClick={handleRefreshData}
                 className="ml-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs"
-                disabled={isLoading}
+                disabled={isLoading || isOperationPending}
               >
                 Refresh
               </button>
@@ -305,7 +394,7 @@ const PuppyTracker = () => {
         <QuickActions
           onAddPottyLog={handleAddPottyLog}
           onAddActivity={handleAddActivity}
-          disabled={isLoading}
+          disabled={isLoading || isOperationPending}
         />
 
         <TodaySummary
@@ -314,7 +403,10 @@ const PuppyTracker = () => {
           successRate={successRate}
           onDeletePottyLog={handleDeletePottyLog}
           onDeleteActivity={handleDeleteActivity}
-          canDelete={connectionStatus.connected || !connectionStatus.checking}
+          canDelete={
+            (connectionStatus.connected || !connectionStatus.checking) &&
+            !isOperationPending
+          }
         />
 
         <TrendAnalysis

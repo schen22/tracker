@@ -207,7 +207,6 @@ const TodaySummary = ({
   const sortedPottyLogs = [...pottyLogs].sort(
     (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
   );
-  sortedPottyLogs.map(log => console.log("sorted log id", log.id));
 
   const sortedActivities = [...activities].sort(
     (a, b) => new Date(b.timestamp) - new Date(a.timestamp)

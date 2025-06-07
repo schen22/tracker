@@ -1,5 +1,3 @@
-// import { scaleLog } from "d3-scale";
-
 class DataService {
   constructor() {
     // GitHub API configuration
@@ -42,10 +40,6 @@ class DataService {
     this.isLoading = false;
     this.error = null;
     this.lastRefresh = null;
-
-    // Cache for performance
-    this.cache = new Map();
-    this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
 
     console.log("initializing connection check");
     // Initialize connection check
@@ -146,14 +140,12 @@ class DataService {
         }
       );
 
-      console.log("reached 150");
       if (response.ok) {
         this.setConnectionStatus({
           connected: true,
           checking: false,
           error: null
         });
-        console.log("reached 157");
         await this.loadData();
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -184,12 +176,6 @@ class DataService {
       const data = await this.fetchDataFromGitHub();
       this.setData(data);
       this.lastRefresh = new Date();
-
-      // Cache the data
-      this.cache.set("puppy-data", {
-        data,
-        timestamp: Date.now()
-      });
     } catch (error) {
       this.setError(`Failed to load data: ${error.message}`);
     } finally {
@@ -208,7 +194,7 @@ class DataService {
       });
 
       if (response.status === 404) {
-        console.log("fetchData  - 404 ");
+        console.log("fetchData - 404, returning empty data");
         // File doesn't exist yet, return empty data structure
         return {
           pottyLogs: [],
@@ -228,7 +214,8 @@ class DataService {
 
       const fileData = await response.json();
       const content = JSON.parse(atob(fileData.content));
-      console.log("fetchData from github = ", fileData);
+      console.log("fetchData from github:", content);
+
       return content;
     } catch (error) {
       console.error("Error fetching data from GitHub:", error);
@@ -236,19 +223,30 @@ class DataService {
     }
   }
 
-  async saveDataToGitHub(data, message = "Update puppy data") {
+  async saveDataToGitHub(
+    newData,
+    message = "Update puppy data",
+    retryCount = 0
+  ) {
     if (!this.connectionStatus.connected) {
       throw new Error("Not connected to GitHub");
     }
 
-    try {
-      const content = btoa(JSON.stringify(data, null, 2));
+    // Prevent infinite retries
+    if (retryCount > 3) {
+      throw new Error("Too many retry attempts, operation failed");
+    }
 
-      // Get current file SHA if it exists
-      let sha = null;
+    try {
+      console.log(
+        `Save attempt ${retryCount + 1}: Getting latest file info for SHA...`
+      );
+
+      let currentSHA = null;
+      let latestData = null;
+
       try {
-        console.log("saving data to github");
-        const currentFile = await fetch(`${this.baseUrl}/puppy-data.json`, {
+        const fileResponse = await fetch(`${this.baseUrl}/puppy-data.json`, {
           headers: {
             Authorization: `Bearer ${this.token}`,
             Accept: "application/vnd.github.v3+json",
@@ -256,25 +254,43 @@ class DataService {
           }
         });
 
-        if (currentFile.ok) {
-          const fileData = await currentFile.json();
-          sha = fileData.sha;
-          console.log("sha = ", sha);
+        if (fileResponse.ok) {
+          const fileData = await fileResponse.json();
+          currentSHA = fileData.sha;
+          latestData = JSON.parse(atob(fileData.content));
+          console.log("Got current SHA:", currentSHA);
+        } else if (fileResponse.status !== 404) {
+          throw new Error(`Failed to get file info: ${fileResponse.status}`);
         }
+        // If 404, file doesn't exist yet, SHA will be null (which is correct for new files)
       } catch (error) {
-        // File might not exist yet, which is fine
+        console.error("Error getting current SHA:", error);
+        throw error;
+      }
+
+      // If we have latest data from GitHub, merge our changes with it
+      let finalData = newData;
+      if (latestData && retryCount > 0) {
+        console.log("Merging with latest remote data due to conflict...");
+        finalData = this.mergeData(newData, latestData);
       }
 
       const payload = {
         message,
-        content,
-        ...(sha && { sha })
+        content: btoa(JSON.stringify(finalData, null, 2))
       };
+
+      // Only include SHA if file exists
+      if (currentSHA) {
+        payload.sha = currentSHA;
+      }
+
+      console.log("Saving data with SHA:", currentSHA);
 
       const response = await fetch(`${this.baseUrl}/puppy-data.json`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${this.token}`, // Changed to Bearer
+          Authorization: `Bearer ${this.token}`,
           Accept: "application/vnd.github.v3+json",
           "Content-Type": "application/json",
           "User-Agent": `"${this.repo}/1.0"`
@@ -284,17 +300,71 @@ class DataService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+
+        // Handle SHA conflicts with retry
+        if (response.status === 409 && retryCount < 3) {
+          console.log(
+            `SHA conflict detected (attempt ${retryCount + 1}), retrying...`
+          );
+          // Small delay before retry
+          await new Promise(resolve =>
+            setTimeout(resolve, 100 + retryCount * 100)
+          );
+          return this.saveDataToGitHub(newData, message, retryCount + 1);
+        }
+
         throw new Error(
           `Failed to save data: ${response.status} - ${errorData.message ||
             response.statusText}`
         );
       }
 
+      console.log("Data saved successfully");
+
+      // Update local state to match what was actually saved
+      this.setData(finalData);
+
       return true;
     } catch (error) {
       console.error("Error saving data to GitHub:", error);
       throw error;
     }
+  }
+
+  // Smart data merging to handle concurrent updates
+  mergeData(localData, remoteData) {
+    // Simple merge strategy: combine arrays and deduplicate by ID
+    const mergedPottyLogs = this.mergeArraysById(
+      localData.pottyLogs || [],
+      remoteData.pottyLogs || []
+    );
+
+    const mergedActivities = this.mergeArraysById(
+      localData.activities || [],
+      remoteData.activities || []
+    );
+
+    return {
+      pottyLogs: mergedPottyLogs,
+      activities: mergedActivities,
+      lastUpdated: new Date().toISOString()
+    };
+  }
+
+  mergeArraysById(localArray, remoteArray) {
+    const merged = [...remoteArray];
+
+    localArray.forEach(localItem => {
+      const existsInRemote = remoteArray.find(
+        remoteItem => remoteItem.id === localItem.id
+      );
+      if (!existsInRemote) {
+        merged.push(localItem);
+      }
+    });
+
+    // Sort by timestamp
+    return merged.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }
 
   async addPottyLog(type, location, notes = "") {
@@ -324,9 +394,9 @@ class DataService {
           updatedData,
           `Add potty log: ${type} ${location}`
         );
+      } else {
+        this.setData(updatedData);
       }
-
-      this.setData(updatedData);
       return true;
     } catch (error) {
       this.setError(`Failed to add potty log: ${error.message}`);
@@ -353,9 +423,9 @@ class DataService {
       // Save to GitHub if connected, otherwise just update local state
       if (this.connectionStatus.connected) {
         await this.saveDataToGitHub(updatedData, `Add activity: ${activity}`);
+      } else {
+        this.setData(updatedData);
       }
-
-      this.setData(updatedData);
       return true;
     } catch (error) {
       this.setError(`Failed to add activity: ${error.message}`);
@@ -375,9 +445,9 @@ class DataService {
 
       if (this.connectionStatus.connected) {
         await this.saveDataToGitHub(updatedData, `Delete potty log: ${logId}`);
+      } else {
+        this.setData(updatedData);
       }
-
-      this.setData(updatedData);
       return true;
     } catch (error) {
       this.setError(`Failed to delete potty log: ${error.message}`);
@@ -401,9 +471,9 @@ class DataService {
           updatedData,
           `Delete activity: ${activityId}`
         );
+      } else {
+        this.setData(updatedData);
       }
-
-      this.setData(updatedData);
       return true;
     } catch (error) {
       this.setError(`Failed to delete activity: ${error.message}`);
@@ -411,7 +481,7 @@ class DataService {
     }
   }
 
-  // Filter methods - FIXED: handle missing data gracefully
+  // Filter methods - handle missing data gracefully
   getPottyLogsByDate(dateString) {
     if (!this.data.pottyLogs) return [];
     return this.data.pottyLogs.filter(log => {
@@ -445,7 +515,7 @@ class DataService {
     };
   }
 
-  // Calculate success rate for a given date - FIXED: use consistent logic
+  // Calculate success rate for a given date
   calculateSuccessRateForDate(dateString) {
     const logs = this.getPottyLogsByDate(dateString);
     if (logs.length === 0) return 0;

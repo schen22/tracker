@@ -34,12 +34,6 @@ const PuppyTracker = () => {
     setCurrentTime(new Date());
   };
 
-  const handleUpdateAgeWeeks = (ageWeeks) => {
-    setPuppyProfile('Artoo', ageWeeks);
-  };
-
-  console.log(puppyProfile.ageWeeks);
-
   return (
     <div className="max-w-6xl mx-auto p-4 bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
       {/* Header */}

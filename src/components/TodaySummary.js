@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Trash2, Clock, MapPin, MessageSquare, X } from "lucide-react";
+import { Trash2, Clock, MapPin, MessageSquare } from "lucide-react";
 
 const SummaryCard = ({ title, value, subtitle, bgColor, textColor }) => {
   return (

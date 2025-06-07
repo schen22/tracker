@@ -14,7 +14,6 @@ import {
   Pie,
   Cell
 } from "recharts";
-import { InsightsService } from "../services/InsightsService";
 
 const TrendChart = ({
   data,

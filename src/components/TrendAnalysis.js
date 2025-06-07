@@ -147,7 +147,6 @@ const InsightCard = ({ insights }) => {
 
 const TrendAnalysis = ({ insightsService, selectedDate, pottyLogs, activities }) => {
   // Get all the analytics data
-//   const insightsService = new InsightsService(dataService);
   const successRateTrend = insightsService.getSuccessRateTrend(14);
   const hourlyTrends = insightsService.getHourlyTrends(7);
   const dailyHourlyActivity = insightsService.getDailyHourlyActivity(selectedDate);

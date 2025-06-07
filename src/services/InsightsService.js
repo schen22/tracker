@@ -21,7 +21,6 @@ export class InsightsService {
         
         const dayLogs = this.dataService.getPottyLogsByDate(dateStr);
         const successRate = this.getSuccessRateForDate(dateStr);
-        // console.log("success rate for date: ", dateStr, "is ", successRate);
         trendData.push({
           date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           successRate,
@@ -38,9 +37,6 @@ export class InsightsService {
         dateRange.includes(log.date)
       );
 
-      // console.log("allLogs = ", allLogs);
-      // console.log("this.dataService.pottyLogs = ", this.dataService.pottyLogs);
-  
       return Array.from({ length: 24 }, (_, hour) => {
         const hourStr = hour.toString().padStart(2, '0');
         const hourLogs = allLogs.filter(log => 

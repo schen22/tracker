@@ -125,7 +125,6 @@ const PuppyTracker = () => {
   };
 
   // Computed values using the service methods
-  console.log("selectedDate = ", selectedDate);
   const filteredPottyLogs = dataService.getPottyLogsByDate(selectedDate);
   const filteredActivities = dataService.getActivitiesByDate(selectedDate);
   const successRate = dataService.calculateSuccessRateForDate(selectedDate);

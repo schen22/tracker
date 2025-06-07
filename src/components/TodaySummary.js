@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Trash2, Clock, MapPin, MessageSquare, X } from 'lucide-react';
 
 const SummaryCard = ({ title, value, subtitle, bgColor, textColor }) => {
   return (
@@ -13,7 +14,138 @@ const SummaryCard = ({ title, value, subtitle, bgColor, textColor }) => {
   );
 };
 
-const TodaySummary = ({ pottyLogs, activities, successRate }) => {
+const LogItem = ({ item, type, onDelete, canDelete }) => {
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleDelete = () => {
+    if (type === 'potty') {
+      onDelete(item.id);
+    } else {
+      onDelete(item.id);
+    }
+    setShowConfirm(false);
+  };
+
+  const formatTime = (timestamp) => {
+    return new Date(timestamp).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  const getTypeColor = (logType) => {
+    switch(logType) {
+      case 'pee': return 'text-blue-600 bg-blue-50';
+      case 'poop': return 'text-green-600 bg-green-50';
+      case 'accident': return 'text-red-600 bg-red-50';
+      default: return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  const getLocationColor = (location) => {
+    switch(location) {
+      case 'outside': return 'text-green-600';
+      case 'inside': return 'text-red-600';
+      case 'crate': return 'text-orange-600';
+      default: return 'text-gray-600';
+    }
+  };
+
+  const getActivityIcon = (activity) => {
+    if (activity?.includes('Fed')) return '🍽️';
+    if (activity?.includes('Play')) return '🎾';
+    if (activity?.includes('Training')) return '🎯';
+    if (activity?.includes('Crate')) return '🏠';
+    if (activity?.includes('Walk')) return '🚶';
+    return '📝';
+  };
+
+  return (
+    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+      <div className="flex-1">
+        {type === 'potty' ? (
+          <div className="flex items-center gap-3">
+            <div className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(item.type)}`}>
+              {item.type.toUpperCase()}
+            </div>
+            <div className="flex items-center gap-1 text-sm">
+              <MapPin className="w-3 h-3" />
+              <span className={getLocationColor(item.location)}>
+                {item.location}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-sm text-gray-500">
+              <Clock className="w-3 h-3" />
+              {formatTime(item.timestamp)}
+            </div>
+            {item.notes && (
+              <div className="flex items-center gap-1 text-sm text-gray-500">
+                <MessageSquare className="w-3 h-3" />
+                <span className="truncate max-w-24">{item.notes}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <span className="text-lg">{getActivityIcon(item.activity)}</span>
+            <div className="text-sm font-medium text-gray-700">
+              {item.activity}
+            </div>
+            {item.duration && (
+              <div className="text-sm text-gray-500">
+                ({item.duration} min)
+              </div>
+            )}
+            <div className="flex items-center gap-1 text-sm text-gray-500">
+              <Clock className="w-3 h-3" />
+              {formatTime(item.timestamp)}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {canDelete && (
+        <div className="flex items-center gap-2">
+          {showConfirm ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleDelete}
+                className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="px-2 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowConfirm(true)}
+              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+              title="Delete entry"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const TodaySummary = ({ 
+  pottyLogs, 
+  activities, 
+  successRate, 
+  onDeletePottyLog, 
+  onDeleteActivity, 
+  canDelete = false 
+}) => {
+  const [showDetails, setShowDetails] = useState(false);
+
   const getTodaysStats = () => {
     const successfulPees = pottyLogs.filter(log => log.type === 'pee' && log.location === 'outside').length;
     const successfulPoops = pottyLogs.filter(log => log.type === 'poop' && log.location === 'outside').length;
@@ -51,9 +183,23 @@ const TodaySummary = ({ pottyLogs, activities, successRate }) => {
     return 'bg-gradient-to-r from-red-100 to-rose-100';
   };
 
+  // Sort logs and activities by timestamp (newest first)
+  const sortedPottyLogs = [...pottyLogs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const sortedActivities = [...activities].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800">Today's Summary</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">Today's Summary</h2>
+        {(pottyLogs.length > 0 || activities.length > 0) && (
+          <button
+            onClick={() => setShowDetails(!showDetails)}
+            className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            {showDetails ? 'Hide Details' : 'Show Details'}
+          </button>
+        )}
+      </div>
       
       {/* Potty Stats Grid */}
       <div className="grid grid-cols-2 gap-4 mb-6">
@@ -151,6 +297,63 @@ const TodaySummary = ({ pottyLogs, activities, successRate }) => {
           </div>
         )}
       </div>
+
+      {/* Detailed Logs - Expandable Section */}
+      {showDetails && (pottyLogs.length > 0 || activities.length > 0) && (
+        <div className="mt-6 border-t pt-4">
+          <div className="space-y-4">
+            {/* Potty Logs Details */}
+            {pottyLogs.length > 0 && (
+              <div>
+                <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  🚽 Potty Logs ({pottyLogs.length})
+                  {!canDelete && (
+                    <span className="text-xs text-gray-500 font-normal">
+                      (View only)
+                    </span>
+                  )}
+                </h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {sortedPottyLogs.map((log) => (
+                    <LogItem
+                      key={log.id}
+                      item={log}
+                      type="potty"
+                      onDelete={onDeletePottyLog}
+                      canDelete={canDelete}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Activities Details */}
+            {activities.length > 0 && (
+              <div>
+                <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  📋 Activities ({activities.length})
+                  {!canDelete && (
+                    <span className="text-xs text-gray-500 font-normal">
+                      (View only)
+                    </span>
+                  )}
+                </h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {sortedActivities.map((activity) => (
+                    <LogItem
+                      key={activity.id}
+                      item={activity}
+                      type="activity"
+                      onDelete={onDeleteActivity}
+                      canDelete={canDelete}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Quick insights */}
       {stats.totalEvents > 0 && (

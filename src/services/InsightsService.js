@@ -21,7 +21,7 @@ export class InsightsService {
         
         const dayLogs = this.dataService.getPottyLogsByDate(dateStr);
         const successRate = this.getSuccessRateForDate(dateStr);
-        
+        // console.log("success rate for date: ", dateStr, "is ", successRate);
         trendData.push({
           date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           successRate,
@@ -34,9 +34,12 @@ export class InsightsService {
   
     getHourlyTrends(days = 7) {
       const dateRange = this._getDateRange(days);
-      const allLogs = this.dataService.pottyLogs.filter(log => 
+      const allLogs = (this.dataService.pottyLogs || []).filter(log =>
         dateRange.includes(log.date)
       );
+
+      // console.log("allLogs = ", allLogs);
+      // console.log("this.dataService.pottyLogs = ", this.dataService.pottyLogs);
   
       return Array.from({ length: 24 }, (_, hour) => {
         const hourStr = hour.toString().padStart(2, '0');
@@ -61,7 +64,7 @@ export class InsightsService {
       return Array.from({ length: 24 }, (_, hour) => {
         const hourStr = hour.toString().padStart(2, '0');
         const hourActivities = allActivities.filter(activity => 
-          parseInt(activity.time.split(':')[0]) === hour
+          parseInt(activity.timestamp.split(':')[0]) === hour
         );
         
         const pottyEvents = hourActivities.filter(a => a.type);
@@ -82,9 +85,13 @@ export class InsightsService {
   
     getPottyTypeDistribution(days = 7) {
       const dateRange = this._getDateRange(days);
-      const recentLogs = this.dataService.pottyLogs.filter(log => 
+      console.log("potty distribution ate range = ", dateRange);
+      console.log("potty distribution potty logs = ", this.dataService.pottyLogs);
+      const recentLogs = (this.dataService.pottyLogs || []).filter(log =>
         dateRange.includes(log.date)
       );
+      console.log("potty distribution recentLogs = ", recentLogs);
+
       
       return [
         { 

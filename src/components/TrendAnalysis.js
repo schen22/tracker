@@ -14,6 +14,7 @@ import {
   Pie, 
   Cell 
 } from 'recharts';
+import { InsightsService } from '../services/InsightsService';
 
 const TrendChart = ({ data, title, dataKey, color = "#10B981", height = 120, domain = [0, 100] }) => {
   if (!data || data.length === 0) return null;
@@ -144,13 +145,16 @@ const InsightCard = ({ insights }) => {
   );
 };
 
-const TrendAnalysis = ({ insightsService, selectedDate }) => {
+const TrendAnalysis = ({ insightsService, selectedDate, pottyLogs, activities }) => {
   // Get all the analytics data
+//   const insightsService = new InsightsService(dataService);
   const successRateTrend = insightsService.getSuccessRateTrend(14);
   const hourlyTrends = insightsService.getHourlyTrends(7);
   const dailyHourlyActivity = insightsService.getDailyHourlyActivity(selectedDate);
   const pottyDistribution = insightsService.getPottyTypeDistribution(7);
 
+  console.log('trendanalysis dataservice potty logs = ', insightsService.dataService.data.pottyLogs);
+  console.log('pottyDistribution = ', pottyDistribution);
   // Generate insights based on the data
   const generateInsights = () => {
     const insights = [];

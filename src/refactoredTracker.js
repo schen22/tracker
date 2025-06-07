@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrackerService } from './services/TrackerService';
+import DataService from './services/DataService';
 import { InsightsService } from './services/InsightsService';
 import { MilestoneService } from './services/MilestoneService';
 import { PuppyProfile } from './models/PuppyData';
@@ -7,27 +7,31 @@ import QuickActions from './components/QuickActions';
 import TodaySummary from './components/TodaySummary';
 import TrendAnalysis from './components/TrendAnalysis';
 import MilestoneCard from './components/MilestoneCard';
-import { Clock, Calendar, Cake, Target } from 'lucide-react';
+import { Clock, Calendar, Cake, Target, Wifi, WifiOff, AlertCircle } from 'lucide-react';
 
 const PuppyTracker = () => {
-  const [trackerService] = useState(() => new TrackerService());
-  const [insightsService] = useState(() => new InsightsService(trackerService));
+  // Services - initialized once
+  const [dataService] = useState(() => new DataService());
+  const [insightsService, setInsightsService] = useState(() => new InsightsService(dataService));
   const [milestoneService] = useState(() => new MilestoneService());
-  // annoyingly js Date object uses zero-based indexing
-  // anyways: hack hard-coded birthdate for now
-  const [puppyProfile, setPuppyProfile] = useState(() => new PuppyProfile('Artoo', trackerService.calculateAgeWeeks(new Date(2025, 3, 14).toISOString())));
+  
+  // Puppy profile state
+  const [puppyProfile, setPuppyProfile] = useState(() => {
+    const birthDate = new Date(2025, 3, 14).toISOString();
+    const ageWeeks = DataService.prototype.calculateAgeWeeks.call({}, birthDate);
+    return new PuppyProfile('Artoo', ageWeeks);
+  });
+  
+  // UI state
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [currentTime, setCurrentTime] = useState(new Date());
-
-  // GitHub connection status
-  const [connectionStatus, setConnectionStatus] = useState({ connected: false, checking: true });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   
-  // Data state
-  const [pottyLogs, setPottyLogs] = useState([]);
-  const [activities, setActivities] = useState([]);
-  const [lastRefresh, setLastRefresh] = useState(new Date());
+  // Data service state - synced with service
+  const [connectionStatus, setConnectionStatus] = useState(dataService.getConnectionStatus());
+  const [data, setData] = useState(dataService.getData());
+  const [isLoading, setIsLoading] = useState(dataService.getLoadingState());
+  const [error, setError] = useState(dataService.getError());
+  const [lastRefresh, setLastRefresh] = useState(dataService.getLastRefresh());
 
   // Timer for current time updates
   useEffect(() => {
@@ -35,104 +39,100 @@ const PuppyTracker = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Check GitHub connection on mount
+  // Set up data service listeners
   useEffect(() => {
-    checkGitHubConnection();
-    loadData();
-  }, []);
-
-  // Auto-refresh data every 5 minutes
-  useEffect(() => {
-    const refreshTimer = setInterval(() => {
-      loadData();
-    }, 5 * 60 * 1000);
+    const handleConnectionChange = (status) => {
+      console.log('Connection status changed:', status);
+      setConnectionStatus(status);
+    };
     
-    return () => clearInterval(refreshTimer);
-  }, []);
-
-  const checkGitHubConnection = async () => {
-    try {
-      const status = await trackerService.checkConnection();
-      setConnectionStatus({ ...status, checking: false });
-    } catch (error) {
-      setConnectionStatus({ connected: false, checking: false, error: error.message });
-    }
-  };
-
-  const loadData = async () => {
-    setIsLoading(true);
-    setError(null);
+    const handleDataChange = (newData) => {
+      console.log('Data changed: ', newData);
+      setData(newData);
+      setInsightsService(new InsightsService(dataService));
+      // note: data doesn't update in offline mode>>>???
+      console.log('Updated data: ', data);
+      console.log('Updated potty logs: ', data.pottyLogs);
+      console.log('Updated activities: ', data.activities);
+    };
     
-    try {
-      const data = await trackerService.getCachedData();
-      setPottyLogs(data.pottyLogs || []);
-      setActivities(data.activities || []);
-      setLastRefresh(new Date());
-    } catch (error) {
-      setError('Failed to load data from GitHub');
-      console.error('Error loading data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const handleLoadingChange = (loading) => {
+      console.log('Loading state changed:', loading);
+      setIsLoading(loading);
+    };
+    
+    const handleErrorChange = (err) => {
+      console.log('Error state changed:', err);
+      setError(err);
+    };
 
+    // Register event listeners
+    dataService.on('connectionChange', handleConnectionChange);
+    dataService.on('dataChange', handleDataChange);
+    dataService.on('loadingChange', handleLoadingChange);
+    dataService.on('errorChange', handleErrorChange);
+
+    // Cleanup listeners on unmount
+    return () => {
+      dataService.off('connectionChange', handleConnectionChange);
+      dataService.off('dataChange', handleDataChange);
+      dataService.off('loadingChange', handleLoadingChange);
+      dataService.off('errorChange', handleErrorChange);
+      dataService.destroy();
+    };
+  }, [dataService]);
+
+  // Event handlers
   const handleAddPottyLog = async (type, location, notes) => {
-    setIsLoading(true);
-    try {
-      const success = await trackerService.addPottyLog(type, location, notes);
-      if (success) {
-        await loadData(); // Refresh data after successful save
-        setCurrentTime(new Date()); // Trigger re-render
-      } else {
-        setError('Failed to save potty log');
-      }
-    } catch (error) {
-      setError('Error saving potty log');
-      console.error('Error adding potty log:', error);
-    } finally {
-      setIsLoading(false);
+    const success = await dataService.addPottyLog(type, location, notes);
+    if (success) {
+      setCurrentTime(new Date()); // Trigger re-render for UI updates
     }
   };
 
-  const handleAddActivity = async (activity, time) => {
-    setIsLoading(true);
-    try {
-      const success = await trackerService.addActivity(activity, time);
-      if (success) {
-        await loadData(); // Refresh data after successful save
-        setCurrentTime(new Date()); // Trigger re-render
-      } else {
-        setError('Failed to save activity');
-      }
-    } catch (error) {
-      setError('Error saving activity');
-      console.error('Error adding activity:', error);
-    } finally {
-      setIsLoading(false);
+  const handleAddActivity = async (activity, duration) => {
+    const success = await dataService.addActivity(activity, duration);
+    if (success) {
+      setCurrentTime(new Date()); // Trigger re-render for UI updates
     }
   };
 
-  const getFilteredPottyLogs = () => {
-    return pottyLogs.filter(log => 
-      log.timestamp.startsWith(selectedDate)
-    );
+  const handleDeletePottyLog = async (logId) => {
+    const success = await dataService.deletePottyLog(logId);
+    if (success) {
+      setCurrentTime(new Date());
+    }
   };
 
-  const getFilteredActivities = () => {
-    return activities.filter(activity => 
-      activity.timestamp.startsWith(selectedDate)
-    );
+  const handleDeleteActivity = async (activityId) => {
+    const success = await dataService.deleteActivity(activityId);
+    if (success) {
+      setCurrentTime(new Date());
+    }
   };
 
-  const calculateSuccessRate = () => {
-    const todayLogs = getFilteredPottyLogs();
-    if (todayLogs.length === 0) return 0;
-    
-    const successfulLogs = todayLogs.filter(log => 
-      log.location === 'outside' && (log.type === 'pee' || log.type === 'poop')
-    );
-    
-    return Math.round((successfulLogs.length / todayLogs.length) * 100);
+  const handleRefreshData = () => {
+    dataService.loadData();
+    setLastRefresh(new Date());
+  };
+
+  const handleClearError = () => {
+    dataService.clearError();
+  };
+
+  const handleRetryConnection = () => {
+    dataService.checkConnection();
+  };
+
+  // Computed values using the service methods
+  console.log("selectedDate = ", selectedDate);
+  const filteredPottyLogs = dataService.getPottyLogsByDate(selectedDate);
+  const filteredActivities = dataService.getActivitiesByDate(selectedDate);
+  const successRate = dataService.calculateSuccessRateForDate(selectedDate);
+
+  // Update puppy age when profile changes
+  const handleAgeChange = (newAge) => {
+    setPuppyProfile(new PuppyProfile('Artoo', parseInt(newAge)));
   };
 
   return (
@@ -165,6 +165,13 @@ const PuppyTracker = () => {
               <div className="flex items-center gap-1 text-red-600">
                 <WifiOff className="w-4 h-4" />
                 <span className="text-sm">Offline</span>
+                <button 
+                  onClick={handleRetryConnection}
+                  className="ml-2 px-2 py-1 bg-red-100 hover:bg-red-200 rounded text-xs"
+                  disabled={connectionStatus.checking}
+                >
+                  Retry
+                </button>
               </div>
             )}
           </div>
@@ -174,10 +181,11 @@ const PuppyTracker = () => {
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-red-600" />
-            <span className="text-red-700">{error}</span>
+            <span className="text-red-700 flex-1">{error}</span>
             <button 
-              onClick={() => setError(null)}
-              className="ml-auto text-red-600 hover:text-red-800"
+              onClick={handleClearError}
+              className="ml-auto text-red-600 hover:text-red-800 px-2 py-1"
+              title="Clear error"
             >
               ×
             </button>
@@ -192,20 +200,32 @@ const PuppyTracker = () => {
           </div>
         )}
 
+        {/* Offline Mode Notice */}
+        {!connectionStatus.connected && !connectionStatus.checking && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2">
+            <WifiOff className="w-4 h-4 text-yellow-600" />
+            <span className="text-yellow-700">
+              Running in offline mode. Data will not be saved to GitHub.
+            </span>
+          </div>
+        )}
+
         {/* Date/time controls */}
         <div className="flex items-center gap-4 text-gray-600 flex-wrap">
           <div className="flex items-center gap-1">
             <Cake className="w-4 h-4" />
-            <span className="text-md font-small">04/14/2025, </span>
-            <span className="text-md font-small">{trackerService.calculateAgeWeeks(new Date(2025, 3, 14).toISOString())}</span>
-            <span className="text-md font-small"> weeks old</span>
+            <span className="text-md">04/14/2025, </span>
+            <span className="text-md">{puppyProfile.ageWeeks}</span>
+            <span className="text-md"> weeks old</span>
           </div>
+          
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
             <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
+          
           <div className="flex items-center gap-1">
-            <Calendar className="w-4 h-4" title="selectedDate"/>
+            <Calendar className="w-4 h-4" title="Selected Date"/>
             <input 
               type="date" 
               value={selectedDate}
@@ -213,14 +233,12 @@ const PuppyTracker = () => {
               className="border rounded px-2 py-1"
             />
           </div>
+          
           <div className="flex items-center gap-1">
             <Target className="w-4 h-4" />
             <select
               value={puppyProfile.ageWeeks}
-              onChange={(e) => 
-                // hacking - recreate puppy profile to save state
-                setPuppyProfile(new PuppyProfile('Artoo', parseInt(e.target.value)))
-              }
+              onChange={(e) => handleAgeChange(e.target.value)}
               className="border rounded px-2 py-1"
             >
               {Array.from({ length: 17 }, (_, i) => i + 8).map(week => (
@@ -228,19 +246,23 @@ const PuppyTracker = () => {
               ))}
             </select>
           </div>
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            Last sync: {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            <button 
-              onClick={loadData}
-              className="ml-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs"
-              disabled={isLoading}
-            >
-              Refresh
-            </button>
-          </div>
+          
+          {lastRefresh && (
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              Last sync: {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <button 
+                onClick={handleRefreshData}
+                className="ml-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs"
+                disabled={isLoading}
+              >
+                Refresh
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <MilestoneCard
           title={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).title}
@@ -251,20 +273,23 @@ const PuppyTracker = () => {
         <QuickActions 
           onAddPottyLog={handleAddPottyLog}
           onAddActivity={handleAddActivity}
-          disabled={isLoading || !connectionStatus.connected}
+          disabled={isLoading}
         />
         
         <TodaySummary 
-          pottyLogs={getFilteredPottyLogs()}
-          activities={getFilteredActivities()}
-          successRate={calculateSuccessRate()}
+          pottyLogs={filteredPottyLogs}
+          activities={filteredActivities}
+          successRate={successRate}
+          onDeletePottyLog={handleDeletePottyLog}
+          onDeleteActivity={handleDeleteActivity}
+          canDelete={connectionStatus.connected || !connectionStatus.checking}
         />
 
         <TrendAnalysis 
           insightsService={insightsService}
           selectedDate={selectedDate}
-          pottyLogs={pottyLogs}
-          activities={activities}
+          pottyLogs={data.pottyLogs}
+          activities={data.activities}
         />
       </div>
     </div>

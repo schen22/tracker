@@ -34,6 +34,12 @@ const PuppyTracker = () => {
     setCurrentTime(new Date());
   };
 
+  const handleUpdateAgeWeeks = (ageWeeks) => {
+    setPuppyProfile('Artoo', ageWeeks);
+  };
+
+  console.log(puppyProfile.ageWeeks);
+
   return (
     <div className="max-w-6xl mx-auto p-4 bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
       {/* Header */}
@@ -58,9 +64,12 @@ const PuppyTracker = () => {
           </div> */}
           <div className="flex items-center gap-1">
             <Target className="w-4 h-4" />
-            <select 
-              value={puppyProfile.ageWeeks} 
-              onChange={(e) => setPuppyProfile('Artoo', parseInt(e.target.value))}
+            <select
+              value={puppyProfile.ageWeeks}
+              onChange={(e) => 
+                // hacking; override previously created profile to save state
+                setPuppyProfile(new PuppyProfile('Artoo', parseInt(e.target.value)))
+              }
               className="border rounded px-2 py-1"
             >
               {Array.from({ length: 17 }, (_, i) => i + 8).map(week => (
@@ -82,13 +91,12 @@ const PuppyTracker = () => {
           activities={dataService.getActivitiesByDate(selectedDate)}
           successRate={insightsService.getSuccessRateForDate(selectedDate)}
         />
-
         <MilestoneCard
           title={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).title}
           goals={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).goals}
           tips={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).tips}
         />
-        
+
         <TrendAnalysis 
           insightsService={insightsService}
           selectedDate={selectedDate}

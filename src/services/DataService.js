@@ -41,6 +41,10 @@ class DataService {
     this.error = null;
     this.lastRefresh = null;
 
+    // Simple operation serialization to prevent concurrent SHA conflicts
+    this.saveInProgress = false;
+    this.pendingSaveOperations = [];
+
     console.log("initializing connection check");
     // Initialize connection check
     this.checkConnection();
@@ -185,6 +189,7 @@ class DataService {
 
   async fetchDataFromGitHub() {
     try {
+      // Use only standard headers to avoid CORS issues
       const response = await fetch(`${this.baseUrl}/puppy-data.json`, {
         headers: {
           Authorization: `Bearer ${this.token}`,
@@ -223,15 +228,49 @@ class DataService {
     }
   }
 
-  async saveDataToGitHub(
-    newData,
-    message = "Update puppy data",
-    retryCount = 0
-  ) {
+  async saveDataToGitHub(newData, message = "Update puppy data") {
     if (!this.connectionStatus.connected) {
       throw new Error("Not connected to GitHub");
     }
 
+    // Queue the operation to prevent concurrent saves
+    return new Promise((resolve, reject) => {
+      this.pendingSaveOperations.push({ newData, message, resolve, reject });
+      this.processSaveQueue();
+    });
+  }
+
+  async processSaveQueue() {
+    if (this.saveInProgress || this.pendingSaveOperations.length === 0) {
+      return;
+    }
+
+    this.saveInProgress = true;
+
+    while (this.pendingSaveOperations.length > 0) {
+      const {
+        newData,
+        message,
+        resolve,
+        reject
+      } = this.pendingSaveOperations.shift();
+
+      try {
+        const result = await this.performSave(newData, message);
+        resolve(result);
+        // Small delay between operations to avoid rapid-fire requests
+        if (this.pendingSaveOperations.length > 0) {
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      } catch (error) {
+        reject(error);
+      }
+    }
+
+    this.saveInProgress = false;
+  }
+
+  async performSave(newData, message, retryCount = 0) {
     // Prevent infinite retries
     if (retryCount > 3) {
       throw new Error("Too many retry attempts, operation failed");
@@ -246,6 +285,7 @@ class DataService {
       let latestData = null;
 
       try {
+        // Use only standard headers to avoid CORS issues
         const fileResponse = await fetch(`${this.baseUrl}/puppy-data.json`, {
           headers: {
             Authorization: `Bearer ${this.token}`,
@@ -306,11 +346,10 @@ class DataService {
           console.log(
             `SHA conflict detected (attempt ${retryCount + 1}), retrying...`
           );
-          // Small delay before retry
-          await new Promise(resolve =>
-            setTimeout(resolve, 100 + retryCount * 100)
-          );
-          return this.saveDataToGitHub(newData, message, retryCount + 1);
+          // Longer delay to allow any caches to clear
+          const delay = 1000 + retryCount * 1000; // 2s, 3s, 4s
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.performSave(newData, message, retryCount + 1);
         }
 
         throw new Error(
@@ -544,6 +583,7 @@ class DataService {
   // Cleanup method
   destroy() {
     this.listeners.clear();
+    this.pendingSaveOperations = [];
   }
 }
 

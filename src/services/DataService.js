@@ -261,15 +261,18 @@ class DataService {
         }
     }
 
-    // Add potty log
     async addPottyLog(type, location, notes = '') {
         try {
+            const now = new Date();
             const newLog = {
                 id: Date.now().toString(),
-                timestamp: new Date().toISOString(),
+                timestamp: now.toISOString(),
                 type, // 'pee', 'poop', 'accident'
                 location, // 'outside', 'inside', 'crate'
-                notes
+                notes,
+                // Add computed fields for consistency
+                isSuccessful: type !== 'accident' && location === 'outside',
+                isAccident: type === 'accident' || location === 'inside' || location === 'crate'
             };
             
             const updatedData = {
@@ -291,12 +294,12 @@ class DataService {
         }
     }
 
-    // Add activity
     async addActivity(activity, duration = null) {
         try {
+            const now = new Date();
             const newActivity = {
                 id: Date.now().toString(),
-                timestamp: new Date().toISOString(),
+                timestamp: now.toISOString(),
                 activity, // 'walk', 'play', 'training', 'sleep', 'meal'
                 duration // in minutes
             };
@@ -362,36 +365,52 @@ class DataService {
         }
     }
 
-    // Filter methods
+    // Filter methods - FIXED: handle missing data gracefully
     getPottyLogsByDate(dateString) {
-        if (!this.data.pottyLogs) return;
-        return this.data.pottyLogs.filter(log => 
-            log.timestamp && log.timestamp.startsWith(dateString)
-        );
+        if (!this.data.pottyLogs) return [];
+        return this.data.pottyLogs.filter(log => {
+            // Handle both date field and timestamp-based filtering
+            if (log.date) {
+                return log.date === dateString;
+            } else if (log.timestamp) {
+                return log.timestamp.startsWith(dateString);
+            }
+            return false;
+        });
     }
 
     getActivitiesByDate(dateString) {
-        if (!this.data.activities) return;
-        return this.data.activities.filter(activity => 
-            activity.timestamp && activity.timestamp.startsWith(dateString)
-        );
+        if (!this.data.activities) return [];
+        return this.data.activities.filter(activity => {
+            // Handle both date field and timestamp-based filtering
+            if (activity.date) {
+                return activity.date === dateString;
+            } else if (activity.timestamp) {
+                return activity.timestamp.startsWith(dateString);
+            }
+            return false;
+        });
     }
 
     getAllData() {
         return {
-            activities: this.activities,
-            pottyLogs: this.pottyLogs
+            activities: this.data.activities || [],
+            pottyLogs: this.data.pottyLogs || []
         };
     }
 
-    // Calculate success rate for a given date
+    // Calculate success rate for a given date - FIXED: use consistent logic
     calculateSuccessRateForDate(dateString) {
         const logs = this.getPottyLogsByDate(dateString);
         if (logs.length === 0) return 0;
         
-        const successfulLogs = logs.filter(log => 
-            log.type !== 'accident' && log.location === 'outside'
-        );
+        const successfulLogs = logs.filter(log => {
+            // Use isSuccessful field if available, otherwise fall back to computed logic
+            if (log.hasOwnProperty('isSuccessful')) {
+                return log.isSuccessful;
+            }
+            return log.type !== 'accident' && log.location === 'outside';
+        });
         
         return Math.round((successfulLogs.length / logs.length) * 100);
     }

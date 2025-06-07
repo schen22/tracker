@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import DataService from './services/DataService';
 import { InsightsService } from './services/InsightsService';
 import { MilestoneService } from './services/MilestoneService';
@@ -12,7 +12,6 @@ import { Clock, Calendar, Cake, Target, Wifi, WifiOff, AlertCircle } from 'lucid
 const PuppyTracker = () => {
   // Services - initialized once
   const [dataService] = useState(() => new DataService());
-  const [insightsService, setInsightsService] = useState(() => new InsightsService(dataService));
   const [milestoneService] = useState(() => new MilestoneService());
   
   // Puppy profile state
@@ -33,6 +32,12 @@ const PuppyTracker = () => {
   const [error, setError] = useState(dataService.getError());
   const [lastRefresh, setLastRefresh] = useState(dataService.getLastRefresh());
 
+  // Create InsightsService instance using useMemo to ensure it updates when data changes
+  const insightsService = useMemo(() => {
+    console.log('Creating new InsightsService with data:', data);
+    return new InsightsService(dataService);
+  }, [dataService, data]); // Re-create when dataService or data changes
+
   // Timer for current time updates
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -49,11 +54,7 @@ const PuppyTracker = () => {
     const handleDataChange = (newData) => {
       console.log('Data changed: ', newData);
       setData(newData);
-      setInsightsService(new InsightsService(dataService));
-      // note: data doesn't update in offline mode>>>???
-      console.log('Updated data: ', data);
-      console.log('Updated potty logs: ', data.pottyLogs);
-      console.log('Updated activities: ', data.activities);
+      // Note: InsightsService will be recreated automatically via useMemo
     };
     
     const handleLoadingChange = (loading) => {

@@ -152,8 +152,6 @@ const TrendAnalysis = ({ insightsService, selectedDate, pottyLogs, activities })
   const dailyHourlyActivity = insightsService.getDailyHourlyActivity(selectedDate);
   const pottyDistribution = insightsService.getPottyTypeDistribution(7);
 
-  console.log('trendanalysis dataservice potty logs = ', insightsService.dataService.data.pottyLogs);
-  console.log('pottyDistribution = ', pottyDistribution);
   // Generate insights based on the data
   const generateInsights = () => {
     const insights = [];

@@ -60,4 +60,24 @@ export class DataService {
     this.activities = data.activities || [];
     this.pottyLogs = data.pottyLogs || [];
   }
+
+  calculateAgeWeeks(birthDate) {
+    // Convert to Date object if string is passed
+    const birth = new Date(birthDate);
+    const today = new Date();
+    
+    // Validate the birth date
+    if (isNaN(birth.getTime())) {
+        throw new Error('Invalid birth date provided');
+    }
+    
+    // Calculate difference in milliseconds
+    const diffInMs = today.getTime() - birth.getTime();
+    
+    // Convert to weeks (1000ms * 60s * 60m * 24h * 7d = 604800000ms per week)
+    const ageInWeeks = diffInMs / (1000 * 60 * 60 * 24 * 7);
+    
+    // Round to nearest week
+    return Math.round(ageInWeeks);
+}
 }

@@ -7,13 +7,15 @@ import QuickActions from './components/QuickActions';
 import TodaySummary from './components/TodaySummary';
 import TrendAnalysis from './components/TrendAnalysis';
 import MilestoneCard from './components/MilestoneCard';
-import { Clock, Calendar, Target } from 'lucide-react';
+import { Clock, Calendar, Cake, Target } from 'lucide-react';
 
 const PuppyTracker = () => {
   const [dataService] = useState(() => new DataService());
   const [insightsService] = useState(() => new InsightsService(dataService));
   const [milestoneService] = useState(() => new MilestoneService());
-  const [puppyProfile, setPuppyProfile] = useState(() => new PuppyProfile('Artoo', 8));
+  // annoyingly js Date object uses zero-based indexing
+  // anyways: hack hard-coded birthdate for now
+  const [puppyProfile, setPuppyProfile] = useState(() => new PuppyProfile('Artoo', dataService.calculateAgeWeeks(new Date(2025, 3, 14).toISOString())));
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -47,15 +49,19 @@ const PuppyTracker = () => {
             <Clock className="w-4 h-4" />
             <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
-          {/* <div className="flex items-center gap-1">
-            <Calendar className="w-4 h-4" />
+          <div className="flex items-center gap-1">
+            <Cake className="w-4 h-4" />
+            <span className="text-md font-small">04/14/2025</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Calendar className="w-4 h-4" title="selectedDate"/>
             <input 
               type="date" 
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="border rounded px-2 py-1"
             />
-          </div> */}
+          </div>
           <div className="flex items-center gap-1">
             <Target className="w-4 h-4" />
             <select
@@ -75,6 +81,13 @@ const PuppyTracker = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <MilestoneCard
+          title={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).title}
+          goals={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).goals}
+          tips={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).tips}
+        />
+
         <QuickActions 
           onAddPottyLog={handleAddPottyLog}
           onAddActivity={handleAddActivity}
@@ -85,18 +98,12 @@ const PuppyTracker = () => {
           activities={dataService.getActivitiesByDate(selectedDate)}
           successRate={insightsService.getSuccessRateForDate(selectedDate)}
         />
-        <MilestoneCard
-          title={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).title}
-          goals={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).goals}
-          tips={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).tips}
-        />
 
         <TrendAnalysis 
           insightsService={insightsService}
           selectedDate={selectedDate}
         />
-        
-        {/* Other components */}
+
       </div>
     </div>
   );

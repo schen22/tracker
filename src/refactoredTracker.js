@@ -47,7 +47,9 @@ const PuppyTracker = () => {
         <div className="flex items-center gap-4 text-gray-600">
           <div className="flex items-center gap-1">
             <Cake className="w-4 h-4" />
-            <span className="text-md font-small">04/14/2025</span>
+            <span className="text-md font-small">04/14/2025, </span>
+            <span className="text-md font-small">{dataService.calculateAgeWeeks(new Date(2025, 3, 14).toISOString())}</span>
+            <span className="text-md font-small"> weeks old</span>
           </div>
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />

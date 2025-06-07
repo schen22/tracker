@@ -1,6 +1,6 @@
 import { PuppyActivity, PottyLog } from '../models/PuppyData.js';
 
-export class DataService {
+export class TrackerService {
   constructor() {
     this.activities = [];
     this.pottyLogs = [];

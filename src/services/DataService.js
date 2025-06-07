@@ -1,3 +1,5 @@
+import { scaleLog } from "d3-scale";
+
 class DataService {
   constructor() {
     // GitHub API configuration
@@ -11,7 +13,7 @@ class DataService {
       );
     }
 
-    this.baseUrl = `https://api.github.com/repos/${this.owner}/${this.repo}`;
+    this.baseUrl = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/data`;
 
     console.log("GitHub Config:", {
       owner: this.owner,
@@ -45,9 +47,9 @@ class DataService {
     this.cache = new Map();
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
 
+    console.log("initializing connection check");
     // Initialize connection check
     this.checkConnection();
-    this.loadData();
   }
 
   // Event system methods
@@ -134,91 +136,33 @@ class DataService {
     this.setConnectionStatus({ checking: true });
 
     try {
-      console.log("Checking GitHub connection...");
-
-      // Try to access the repository directly instead of rate_limit endpoint
-      const repoUrl = `https://api.github.com/repos/${this.owner}/${this.repo}`;
-      console.log("Testing repository access:", repoUrl);
-
-      const response = await fetch(repoUrl, {
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          "User-Agent": "PuppyTracker/1.0",
-          Accept: "application/vnd.github.v3+json"
-        }
-      });
-
-      console.log("GitHub API response status:", response.status);
-
-      if (response.ok) {
-        const repoData = await response.json();
-        console.log("Repository access successful:", repoData.name);
-
-        // Now try rate limit endpoint for additional info
-        try {
-          const rateLimitResponse = await fetch(
-            "https://api.github.com/rate_limit",
-            {
-              headers: {
-                Authorization: `Bearer ${this.token}`,
-                "User-Agent": "PuppyTracker/1.0"
-              }
-            }
-          );
-
-          if (rateLimitResponse.ok) {
-            const rateLimitData = await rateLimitResponse.json();
-            console.log("Rate limit data:", rateLimitData);
-
-            this.setConnectionStatus({
-              connected: true,
-              checking: false,
-              remaining:
-                rateLimitData.core?.remaining ||
-                rateLimitData.rate?.remaining ||
-                null,
-              resetTime:
-                rateLimitData.core?.reset || rateLimitData.rate?.reset
-                  ? new Date(
-                      (rateLimitData.core?.reset || rateLimitData.rate?.reset) *
-                        1000
-                    )
-                  : null,
-              error: null
-            });
-          } else {
-            // Repository access works, but rate limit check failed - still mark as connected
-            this.setConnectionStatus({
-              connected: true,
-              checking: false,
-              remaining: null,
-              resetTime: null,
-              error: null
-            });
+      const response = await fetch(
+        `https://api.github.com/repos/${this.owner}/${this.repo}`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            "User-Agent": "PuppyTracker/1.0"
           }
-        } catch (rateLimitError) {
-          console.warn(
-            "Rate limit check failed, but repository access works:",
-            rateLimitError
-          );
-          this.setConnectionStatus({
-            connected: true,
-            checking: false,
-            remaining: null,
-            resetTime: null,
-            error: null
-          });
         }
+      );
+
+      console.log("reached 150");
+      if (response.ok) {
+        this.setConnectionStatus({
+          connected: true,
+          checking: false,
+          error: null
+        });
+        console.log("reached 157");
+        await this.loadData();
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.error("GitHub API error response:", errorData);
         throw new Error(
           `Cannot access repository: ${response.status} - ${errorData.message ||
             response.statusText}`
         );
       }
     } catch (error) {
-      console.error("GitHub connection error:", error);
       this.setConnectionStatus({
         connected: false,
         checking: false,
@@ -264,6 +208,7 @@ class DataService {
       });
 
       if (response.status === 404) {
+        console.log("fetchData  - 404 ");
         // File doesn't exist yet, return empty data structure
         return {
           pottyLogs: [],
@@ -283,6 +228,7 @@ class DataService {
 
       const fileData = await response.json();
       const content = JSON.parse(atob(fileData.content));
+      console.log("fetchData from github = ", fileData);
       return content;
     } catch (error) {
       console.error("Error fetching data from GitHub:", error);
@@ -301,6 +247,7 @@ class DataService {
       // Get current file SHA if it exists
       let sha = null;
       try {
+        console.log("saving data to github");
         const currentFile = await fetch(`${this.baseUrl}/puppy-data.json`, {
           headers: {
             Authorization: `Bearer ${this.token}`,
@@ -312,6 +259,7 @@ class DataService {
         if (currentFile.ok) {
           const fileData = await currentFile.json();
           sha = fileData.sha;
+          console.log("sha = ", sha);
         }
       } catch (error) {
         // File might not exist yet, which is fine
@@ -417,6 +365,7 @@ class DataService {
 
   // Delete potty log
   async deletePottyLog(logId) {
+    console.log("delete potty log w id: ", logId);
     try {
       const updatedData = {
         ...this.data,

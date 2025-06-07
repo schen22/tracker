@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
-import { Trash2, Clock, MapPin, MessageSquare, X } from 'lucide-react';
+import React, { useState } from "react";
+import { Trash2, Clock, MapPin, MessageSquare, X } from "lucide-react";
 
 const SummaryCard = ({ title, value, subtitle, bgColor, textColor }) => {
   return (
     <div className={`${bgColor} p-3 rounded-lg text-center`}>
-      <div className={`text-2xl font-bold ${textColor}`}>
-        {value}
-      </div>
-      <div className={`text-sm ${textColor.replace('600', '800')}`}>
+      <div className={`text-2xl font-bold ${textColor}`}>{value}</div>
+      <div className={`text-sm ${textColor.replace("600", "800")}`}>
         {subtitle}
       </div>
     </div>
@@ -18,7 +16,7 @@ const LogItem = ({ item, type, onDelete, canDelete }) => {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleDelete = () => {
-    if (type === 'potty') {
+    if (type === "potty") {
       onDelete(item.id);
     } else {
       onDelete(item.id);
@@ -26,46 +24,58 @@ const LogItem = ({ item, type, onDelete, canDelete }) => {
     setShowConfirm(false);
   };
 
-  const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+  const formatTime = timestamp => {
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
     });
   };
 
-  const getTypeColor = (logType) => {
-    switch(logType) {
-      case 'pee': return 'text-blue-600 bg-blue-50';
-      case 'poop': return 'text-green-600 bg-green-50';
-      case 'accident': return 'text-red-600 bg-red-50';
-      default: return 'text-gray-600 bg-gray-50';
+  const getTypeColor = logType => {
+    switch (logType) {
+      case "pee":
+        return "text-blue-600 bg-blue-50";
+      case "poop":
+        return "text-green-600 bg-green-50";
+      case "accident":
+        return "text-red-600 bg-red-50";
+      default:
+        return "text-gray-600 bg-gray-50";
     }
   };
 
-  const getLocationColor = (location) => {
-    switch(location) {
-      case 'outside': return 'text-green-600';
-      case 'inside': return 'text-red-600';
-      case 'crate': return 'text-orange-600';
-      default: return 'text-gray-600';
+  const getLocationColor = location => {
+    switch (location) {
+      case "outside":
+        return "text-green-600";
+      case "inside":
+        return "text-red-600";
+      case "crate":
+        return "text-orange-600";
+      default:
+        return "text-gray-600";
     }
   };
 
-  const getActivityIcon = (activity) => {
-    if (activity?.includes('Fed')) return '🍽️';
-    if (activity?.includes('Play')) return '🎾';
-    if (activity?.includes('Training')) return '🎯';
-    if (activity?.includes('Crate')) return '🏠';
-    if (activity?.includes('Walk')) return '🚶';
-    return '📝';
+  const getActivityIcon = activity => {
+    if (activity?.includes("Fed")) return "🍽️";
+    if (activity?.includes("Play")) return "🎾";
+    if (activity?.includes("Training")) return "🎯";
+    if (activity?.includes("Crate")) return "🏠";
+    if (activity?.includes("Walk")) return "🚶";
+    return "📝";
   };
 
   return (
     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
       <div className="flex-1">
-        {type === 'potty' ? (
+        {type === "potty" ? (
           <div className="flex items-center gap-3">
-            <div className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(item.type)}`}>
+            <div
+              className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(
+                item.type
+              )}`}
+            >
               {item.type.toUpperCase()}
             </div>
             <div className="flex items-center gap-1 text-sm">
@@ -92,9 +102,7 @@ const LogItem = ({ item, type, onDelete, canDelete }) => {
               {item.activity}
             </div>
             {item.duration && (
-              <div className="text-sm text-gray-500">
-                ({item.duration} min)
-              </div>
+              <div className="text-sm text-gray-500">({item.duration} min)</div>
             )}
             <div className="flex items-center gap-1 text-sm text-gray-500">
               <Clock className="w-3 h-3" />
@@ -103,7 +111,7 @@ const LogItem = ({ item, type, onDelete, canDelete }) => {
           </div>
         )}
       </div>
-      
+
       {canDelete && (
         <div className="flex items-center gap-2">
           {showConfirm ? (
@@ -136,26 +144,38 @@ const LogItem = ({ item, type, onDelete, canDelete }) => {
   );
 };
 
-const TodaySummary = ({ 
-  pottyLogs, 
-  activities, 
-  successRate, 
-  onDeletePottyLog, 
-  onDeleteActivity, 
-  canDelete = false 
+const TodaySummary = ({
+  pottyLogs,
+  activities,
+  successRate,
+  onDeletePottyLog,
+  onDeleteActivity,
+  canDelete = false
 }) => {
   const [showDetails, setShowDetails] = useState(false);
 
   const getTodaysStats = () => {
-    const successfulPees = pottyLogs.filter(log => log.type === 'pee' && log.location === 'outside').length;
-    const successfulPoops = pottyLogs.filter(log => log.type === 'poop' && log.location === 'outside').length;
-    const accidents = pottyLogs.filter(log => log.location === 'inside').length;
+    const successfulPees = pottyLogs.filter(
+      log => log.type === "pee" && log.location === "outside"
+    ).length;
+    const successfulPoops = pottyLogs.filter(
+      log => log.type === "poop" && log.location === "outside"
+    ).length;
+    const accidents = pottyLogs.filter(log => log.location === "inside").length;
     const totalEvents = pottyLogs.length;
-    
-    const feedingSessions = activities.filter(activity => activity.activity?.includes('Fed')).length;
-    const playSessions = activities.filter(activity => activity.activity?.includes('Play')).length;
-    const trainingSessions = activities.filter(activity => activity.activity?.includes('Training')).length;
-    const crateSessions = activities.filter(activity => activity.activity?.includes('Crate')).length;
+
+    const feedingSessions = activities.filter(activity =>
+      activity.activity?.includes("Fed")
+    ).length;
+    const playSessions = activities.filter(activity =>
+      activity.activity?.includes("Play")
+    ).length;
+    const trainingSessions = activities.filter(activity =>
+      activity.activity?.includes("Training")
+    ).length;
+    const crateSessions = activities.filter(activity =>
+      activity.activity?.includes("Crate")
+    ).length;
 
     return {
       successfulPees,
@@ -171,21 +191,25 @@ const TodaySummary = ({
 
   const stats = getTodaysStats();
 
-  const getSuccessRateColor = (rate) => {
-    if (rate >= 80) return 'text-green-600';
-    if (rate >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+  const getSuccessRateColor = rate => {
+    if (rate >= 80) return "text-green-600";
+    if (rate >= 60) return "text-yellow-600";
+    return "text-red-600";
   };
 
-  const getSuccessRateBg = (rate) => {
-    if (rate >= 80) return 'bg-gradient-to-r from-green-100 to-emerald-100';
-    if (rate >= 60) return 'bg-gradient-to-r from-yellow-100 to-amber-100';
-    return 'bg-gradient-to-r from-red-100 to-rose-100';
+  const getSuccessRateBg = rate => {
+    if (rate >= 80) return "bg-gradient-to-r from-green-100 to-emerald-100";
+    if (rate >= 60) return "bg-gradient-to-r from-yellow-100 to-amber-100";
+    return "bg-gradient-to-r from-red-100 to-rose-100";
   };
 
   // Sort logs and activities by timestamp (newest first)
-  const sortedPottyLogs = [...pottyLogs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  const sortedActivities = [...activities].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const sortedPottyLogs = [...pottyLogs].sort(
+    (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+  );
+  const sortedActivities = [...activities].sort(
+    (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+  );
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
@@ -196,11 +220,11 @@ const TodaySummary = ({
             onClick={() => setShowDetails(!showDetails)}
             className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
           >
-            {showDetails ? 'Hide Details' : 'Show Details'}
+            {showDetails ? "Hide Details" : "Show Details"}
           </button>
         )}
       </div>
-      
+
       {/* Potty Stats Grid */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <SummaryCard
@@ -228,17 +252,24 @@ const TodaySummary = ({
           textColor="text-gray-600"
         />
       </div>
-      
+
       {/* Success Rate */}
       {stats.totalEvents > 0 && (
         <div className={`${getSuccessRateBg(successRate)} p-4 rounded-lg mb-6`}>
           <div className="text-center">
-            <div className="text-lg font-semibold text-gray-800">Potty Success Rate</div>
-            <div className={`text-3xl font-bold ${getSuccessRateColor(successRate)}`}>
+            <div className="text-lg font-semibold text-gray-800">
+              Potty Success Rate
+            </div>
+            <div
+              className={`text-3xl font-bold ${getSuccessRateColor(
+                successRate
+              )}`}
+            >
               {successRate}%
             </div>
             <div className="text-sm text-gray-600 mt-1">
-              {stats.successfulPees + stats.successfulPoops} successful out of {stats.totalEvents} attempts
+              {stats.successfulPees + stats.successfulPoops} successful out of{" "}
+              {stats.totalEvents} attempts
             </div>
           </div>
         </div>
@@ -246,56 +277,68 @@ const TodaySummary = ({
 
       {/* Activity Summary */}
       <div className="border-t pt-4">
-        <h3 className="text-lg font-semibold mb-3 text-gray-700">Daily Activities</h3>
+        <h3 className="text-lg font-semibold mb-3 text-gray-700">
+          Daily Activities
+        </h3>
         <div className="grid grid-cols-2 gap-3">
           {stats.feedingSessions > 0 && (
             <div className="flex items-center gap-2 p-2 bg-orange-50 rounded">
               <span className="text-lg">🍽️</span>
               <div>
-                <div className="font-semibold text-orange-700">{stats.feedingSessions}</div>
+                <div className="font-semibold text-orange-700">
+                  {stats.feedingSessions}
+                </div>
                 <div className="text-xs text-orange-600">Feeding Sessions</div>
               </div>
             </div>
           )}
-          
+
           {stats.playSessions > 0 && (
             <div className="flex items-center gap-2 p-2 bg-yellow-50 rounded">
               <span className="text-lg">🎾</span>
               <div>
-                <div className="font-semibold text-yellow-700">{stats.playSessions}</div>
+                <div className="font-semibold text-yellow-700">
+                  {stats.playSessions}
+                </div>
                 <div className="text-xs text-yellow-600">Play Sessions</div>
               </div>
             </div>
           )}
-          
+
           {stats.trainingSessions > 0 && (
             <div className="flex items-center gap-2 p-2 bg-indigo-50 rounded">
               <span className="text-lg">🎯</span>
               <div>
-                <div className="font-semibold text-indigo-700">{stats.trainingSessions}</div>
+                <div className="font-semibold text-indigo-700">
+                  {stats.trainingSessions}
+                </div>
                 <div className="text-xs text-indigo-600">Training Sessions</div>
               </div>
             </div>
           )}
-          
+
           {stats.crateSessions > 0 && (
             <div className="flex items-center gap-2 p-2 bg-purple-50 rounded">
               <span className="text-lg">🏠</span>
               <div>
-                <div className="font-semibold text-purple-700">{stats.crateSessions}</div>
+                <div className="font-semibold text-purple-700">
+                  {stats.crateSessions}
+                </div>
                 <div className="text-xs text-purple-600">Crate Sessions</div>
               </div>
             </div>
           )}
         </div>
-        
+
         {/* No activities message */}
-        {stats.feedingSessions === 0 && stats.playSessions === 0 && 
-         stats.trainingSessions === 0 && stats.crateSessions === 0 && (
-          <div className="text-center text-gray-500 py-4 text-sm">
-            No activities logged today
-          </div>
-        )}
+        {stats.feedingSessions === 0 &&
+          stats.playSessions === 0 &&
+          stats.trainingSessions === 0 &&
+          stats.crateSessions === 0 && (
+            <div className="text-center text-gray-500 py-4 text-sm">
+              No activities logged today
+            </div>
+          )}
       </div>
 
       {/* Detailed Logs - Expandable Section */}
@@ -314,7 +357,7 @@ const TodaySummary = ({
                   )}
                 </h4>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {sortedPottyLogs.map((log) => (
+                  {sortedPottyLogs.map(log => (
                     <LogItem
                       key={log.id}
                       item={log}
@@ -339,7 +382,7 @@ const TodaySummary = ({
                   )}
                 </h4>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {sortedActivities.map((activity) => (
+                  {sortedActivities.map(activity => (
                     <LogItem
                       key={activity.id}
                       item={activity}
@@ -360,9 +403,13 @@ const TodaySummary = ({
         <div className="mt-4 p-3 bg-gray-50 rounded-lg">
           <div className="text-sm text-gray-700">
             <span className="font-semibold">Quick Insight: </span>
-            {successRate >= 80 && "Excellent progress! Your puppy is doing great with potty training."}
-            {successRate >= 60 && successRate < 80 && "Good progress! Keep up the consistent routine."}
-            {successRate < 60 && "Keep working on the routine. Consistency is key for success."}
+            {successRate >= 80 &&
+              "Excellent progress! Your puppy is doing great with potty training."}
+            {successRate >= 60 &&
+              successRate < 80 &&
+              "Good progress! Keep up the consistent routine."}
+            {successRate < 60 &&
+              "Keep working on the routine. Consistency is key for success."}
           </div>
         </div>
       )}
@@ -372,7 +419,9 @@ const TodaySummary = ({
         <div className="text-center text-gray-500 py-8">
           <div className="text-lg mb-2">📝</div>
           <div>No potty events logged for today yet</div>
-          <div className="text-sm mt-1">Start logging to see your puppy's progress!</div>
+          <div className="text-sm mt-1">
+            Start logging to see your puppy's progress!
+          </div>
         </div>
       )}
     </div>

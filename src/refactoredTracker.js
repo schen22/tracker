@@ -1,32 +1,47 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import DataService from './services/DataService';
-import { InsightsService } from './services/InsightsService';
-import { MilestoneService } from './services/MilestoneService';
-import { PuppyProfile } from './models/PuppyData';
-import QuickActions from './components/QuickActions';
-import TodaySummary from './components/TodaySummary';
-import TrendAnalysis from './components/TrendAnalysis';
-import MilestoneCard from './components/MilestoneCard';
-import { Clock, Calendar, Cake, Target, Wifi, WifiOff, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from "react";
+import DataService from "./services/DataService";
+import { InsightsService } from "./services/InsightsService";
+import { MilestoneService } from "./services/MilestoneService";
+import { PuppyProfile } from "./models/PuppyData";
+import QuickActions from "./components/QuickActions";
+import TodaySummary from "./components/TodaySummary";
+import TrendAnalysis from "./components/TrendAnalysis";
+import MilestoneCard from "./components/MilestoneCard";
+import {
+  Clock,
+  Calendar,
+  Cake,
+  Target,
+  Wifi,
+  WifiOff,
+  AlertCircle
+} from "lucide-react";
 
 const PuppyTracker = () => {
   // Services - initialized once
   const [dataService] = useState(() => new DataService());
   const [milestoneService] = useState(() => new MilestoneService());
-  
+
   // Puppy profile state
   const [puppyProfile, setPuppyProfile] = useState(() => {
     const birthDate = new Date(2025, 3, 14).toISOString();
-    const ageWeeks = DataService.prototype.calculateAgeWeeks.call({}, birthDate);
-    return new PuppyProfile('Artoo', ageWeeks);
+    const ageWeeks = DataService.prototype.calculateAgeWeeks.call(
+      {},
+      birthDate
+    );
+    return new PuppyProfile("Artoo", ageWeeks);
   });
-  
+
   // UI state
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+
   // Data service state - synced with service
-  const [connectionStatus, setConnectionStatus] = useState(dataService.getConnectionStatus());
+  const [connectionStatus, setConnectionStatus] = useState(
+    dataService.getConnectionStatus()
+  );
   const [data, setData] = useState(dataService.getData());
   const [isLoading, setIsLoading] = useState(dataService.getLoadingState());
   const [error, setError] = useState(dataService.getError());
@@ -34,7 +49,7 @@ const PuppyTracker = () => {
 
   // Create InsightsService instance using useMemo to ensure it updates when data changes
   const insightsService = useMemo(() => {
-    console.log('Creating new InsightsService with data:', data);
+    console.log("Creating new InsightsService with data:", data);
     return new InsightsService(dataService);
   }, [dataService, data]); // Re-create when dataService or data changes
 
@@ -46,39 +61,39 @@ const PuppyTracker = () => {
 
   // Set up data service listeners
   useEffect(() => {
-    const handleConnectionChange = (status) => {
-      console.log('Connection status changed:', status);
+    const handleConnectionChange = status => {
+      console.log("Connection status changed:", status);
       setConnectionStatus(status);
     };
-    
-    const handleDataChange = (newData) => {
-      console.log('Data changed: ', newData);
+
+    const handleDataChange = newData => {
+      console.log("Data changed: ", newData);
       setData(newData);
       // Note: InsightsService will be recreated automatically via useMemo
     };
-    
-    const handleLoadingChange = (loading) => {
-      console.log('Loading state changed:', loading);
+
+    const handleLoadingChange = loading => {
+      console.log("Loading state changed:", loading);
       setIsLoading(loading);
     };
-    
-    const handleErrorChange = (err) => {
-      console.log('Error state changed:', err);
+
+    const handleErrorChange = err => {
+      console.log("Error state changed:", err);
       setError(err);
     };
 
     // Register event listeners
-    dataService.on('connectionChange', handleConnectionChange);
-    dataService.on('dataChange', handleDataChange);
-    dataService.on('loadingChange', handleLoadingChange);
-    dataService.on('errorChange', handleErrorChange);
+    dataService.on("connectionChange", handleConnectionChange);
+    dataService.on("dataChange", handleDataChange);
+    dataService.on("loadingChange", handleLoadingChange);
+    dataService.on("errorChange", handleErrorChange);
 
     // Cleanup listeners on unmount
     return () => {
-      dataService.off('connectionChange', handleConnectionChange);
-      dataService.off('dataChange', handleDataChange);
-      dataService.off('loadingChange', handleLoadingChange);
-      dataService.off('errorChange', handleErrorChange);
+      dataService.off("connectionChange", handleConnectionChange);
+      dataService.off("dataChange", handleDataChange);
+      dataService.off("loadingChange", handleLoadingChange);
+      dataService.off("errorChange", handleErrorChange);
       dataService.destroy();
     };
   }, [dataService]);
@@ -98,14 +113,14 @@ const PuppyTracker = () => {
     }
   };
 
-  const handleDeletePottyLog = async (logId) => {
+  const handleDeletePottyLog = async logId => {
     const success = await dataService.deletePottyLog(logId);
     if (success) {
       setCurrentTime(new Date());
     }
   };
 
-  const handleDeleteActivity = async (activityId) => {
+  const handleDeleteActivity = async activityId => {
     const success = await dataService.deleteActivity(activityId);
     if (success) {
       setCurrentTime(new Date());
@@ -131,8 +146,8 @@ const PuppyTracker = () => {
   const successRate = dataService.calculateSuccessRateForDate(selectedDate);
 
   // Update puppy age when profile changes
-  const handleAgeChange = (newAge) => {
-    setPuppyProfile(new PuppyProfile('Artoo', parseInt(newAge)));
+  const handleAgeChange = newAge => {
+    setPuppyProfile(new PuppyProfile("Artoo", parseInt(newAge)));
   };
 
   return (
@@ -143,7 +158,7 @@ const PuppyTracker = () => {
           <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
             🐕 {puppyProfile.name} Tracker
           </h1>
-          
+
           {/* Connection Status */}
           <div className="flex items-center gap-2">
             {connectionStatus.checking ? (
@@ -165,7 +180,7 @@ const PuppyTracker = () => {
               <div className="flex items-center gap-1 text-red-600">
                 <WifiOff className="w-4 h-4" />
                 <span className="text-sm">Offline</span>
-                <button 
+                <button
                   onClick={handleRetryConnection}
                   className="ml-2 px-2 py-1 bg-red-100 hover:bg-red-200 rounded text-xs"
                   disabled={connectionStatus.checking}
@@ -182,7 +197,7 @@ const PuppyTracker = () => {
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-red-600" />
             <span className="text-red-700 flex-1">{error}</span>
-            <button 
+            <button
               onClick={handleClearError}
               className="ml-auto text-red-600 hover:text-red-800 px-2 py-1"
               title="Clear error"
@@ -218,39 +233,50 @@ const PuppyTracker = () => {
             <span className="text-md">{puppyProfile.ageWeeks}</span>
             <span className="text-md"> weeks old</span>
           </div>
-          
+
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
-            <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            <span>
+              {currentTime.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit"
+              })}
+            </span>
           </div>
-          
+
           <div className="flex items-center gap-1">
-            <Calendar className="w-4 h-4" title="Selected Date"/>
-            <input 
-              type="date" 
+            <Calendar className="w-4 h-4" title="Selected Date" />
+            <input
+              type="date"
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={e => setSelectedDate(e.target.value)}
               className="border rounded px-2 py-1"
             />
           </div>
-          
+
           <div className="flex items-center gap-1">
             <Target className="w-4 h-4" />
             <select
               value={puppyProfile.ageWeeks}
-              onChange={(e) => handleAgeChange(e.target.value)}
+              onChange={e => handleAgeChange(e.target.value)}
               className="border rounded px-2 py-1"
             >
               {Array.from({ length: 17 }, (_, i) => i + 8).map(week => (
-                <option key={week} value={week}>{week} weeks old</option>
+                <option key={week} value={week}>
+                  {week} weeks old
+                </option>
               ))}
             </select>
           </div>
-          
+
           {lastRefresh && (
             <div className="flex items-center gap-1 text-xs text-gray-500">
-              Last sync: {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              <button 
+              Last sync:{" "}
+              {lastRefresh.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit"
+              })}
+              <button
                 onClick={handleRefreshData}
                 className="ml-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs"
                 disabled={isLoading}
@@ -265,18 +291,24 @@ const PuppyTracker = () => {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <MilestoneCard
-          title={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).title}
-          goals={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).goals}
-          tips={milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).tips}
+          title={
+            milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).title
+          }
+          goals={
+            milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).goals
+          }
+          tips={
+            milestoneService.getMilestoneForWeek(puppyProfile.ageWeeks).tips
+          }
         />
 
-        <QuickActions 
+        <QuickActions
           onAddPottyLog={handleAddPottyLog}
           onAddActivity={handleAddActivity}
           disabled={isLoading}
         />
-        
-        <TodaySummary 
+
+        <TodaySummary
           pottyLogs={filteredPottyLogs}
           activities={filteredActivities}
           successRate={successRate}
@@ -285,7 +317,7 @@ const PuppyTracker = () => {
           canDelete={connectionStatus.connected || !connectionStatus.checking}
         />
 
-        <TrendAnalysis 
+        <TrendAnalysis
           insightsService={insightsService}
           selectedDate={selectedDate}
           pottyLogs={data.pottyLogs}

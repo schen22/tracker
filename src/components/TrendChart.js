@@ -1,5 +1,13 @@
-import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from "recharts";
 
 const TrendChart = ({ data, title, dataKey, color = "#10B981" }) => {
   return (
@@ -10,11 +18,11 @@ const TrendChart = ({ data, title, dataKey, color = "#10B981" }) => {
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis dataKey="date" tick={{ fontSize: 10 }} />
           <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-          <Tooltip formatter={(value) => [`${value}%`, 'Success Rate']} />
-          <Line 
-            type="monotone" 
-            dataKey={dataKey} 
-            stroke={color} 
+          <Tooltip formatter={value => [`${value}%`, "Success Rate"]} />
+          <Line
+            type="monotone"
+            dataKey={dataKey}
+            stroke={color}
             strokeWidth={2}
             dot={{ fill: color, strokeWidth: 2, r: 3 }}
           />

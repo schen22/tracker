@@ -1,8 +1,6 @@
 class DataService {
   constructor() {
     // GitHub API configuration
-    console.log(process.env.REACT_APP_GITHUB_TOKEN);
-    console.log("reached ln 5");
     this.token = process.env.REACT_APP_GITHUB_TOKEN;
     this.repo = process.env.REACT_APP_GITHUB_REPO;
     this.owner = process.env.REACT_APP_GITHUB_OWNER;

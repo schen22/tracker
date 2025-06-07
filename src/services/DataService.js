@@ -11,7 +11,14 @@ class DataService {
       );
     }
 
-    this.baseUrl = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/data`;
+    this.baseUrl = `https://api.github.com/repos/${this.owner}/${this.repo}`;
+
+    console.log("GitHub Config:", {
+      owner: this.owner,
+      repo: this.repo,
+      token: this.token ? `${this.token.substring(0, 4)}...` : "missing",
+      baseUrl: this.baseUrl
+    });
 
     // Event system for reactive updates
     this.listeners = new Map();
@@ -127,23 +134,91 @@ class DataService {
     this.setConnectionStatus({ checking: true });
 
     try {
-      const response = await fetch("https://api.github.com/rate_limit", {
-        headers: { Authorization: `bearer ${this.token}` }
+      console.log("Checking GitHub connection...");
+
+      // Try to access the repository directly instead of rate_limit endpoint
+      const repoUrl = `https://api.github.com/repos/${this.owner}/${this.repo}`;
+      console.log("Testing repository access:", repoUrl);
+
+      const response = await fetch(repoUrl, {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "User-Agent": "PuppyTracker/1.0",
+          Accept: "application/vnd.github.v3+json"
+        }
       });
 
+      console.log("GitHub API response status:", response.status);
+
       if (response.ok) {
-        const data = await response.json();
-        this.setConnectionStatus({
-          connected: true,
-          checking: false,
-          remaining: data.core.remaining,
-          resetTime: new Date(data.core.reset * 1000),
-          error: null
-        });
+        const repoData = await response.json();
+        console.log("Repository access successful:", repoData.name);
+
+        // Now try rate limit endpoint for additional info
+        try {
+          const rateLimitResponse = await fetch(
+            "https://api.github.com/rate_limit",
+            {
+              headers: {
+                Authorization: `Bearer ${this.token}`,
+                "User-Agent": "PuppyTracker/1.0"
+              }
+            }
+          );
+
+          if (rateLimitResponse.ok) {
+            const rateLimitData = await rateLimitResponse.json();
+            console.log("Rate limit data:", rateLimitData);
+
+            this.setConnectionStatus({
+              connected: true,
+              checking: false,
+              remaining:
+                rateLimitData.core?.remaining ||
+                rateLimitData.rate?.remaining ||
+                null,
+              resetTime:
+                rateLimitData.core?.reset || rateLimitData.rate?.reset
+                  ? new Date(
+                      (rateLimitData.core?.reset || rateLimitData.rate?.reset) *
+                        1000
+                    )
+                  : null,
+              error: null
+            });
+          } else {
+            // Repository access works, but rate limit check failed - still mark as connected
+            this.setConnectionStatus({
+              connected: true,
+              checking: false,
+              remaining: null,
+              resetTime: null,
+              error: null
+            });
+          }
+        } catch (rateLimitError) {
+          console.warn(
+            "Rate limit check failed, but repository access works:",
+            rateLimitError
+          );
+          this.setConnectionStatus({
+            connected: true,
+            checking: false,
+            remaining: null,
+            resetTime: null,
+            error: null
+          });
+        }
       } else {
-        throw new Error(`GitHub API returned ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error("GitHub API error response:", errorData);
+        throw new Error(
+          `Cannot access repository: ${response.status} - ${errorData.message ||
+            response.statusText}`
+        );
       }
     } catch (error) {
+      console.error("GitHub connection error:", error);
       this.setConnectionStatus({
         connected: false,
         checking: false,
@@ -178,13 +253,13 @@ class DataService {
     }
   }
 
-  // Fetch data from GitHub API
   async fetchDataFromGitHub() {
     try {
       const response = await fetch(`${this.baseUrl}/puppy-data.json`, {
         headers: {
-          Authorization: `bearer ${this.token}`,
-          Accept: "application/vnd.github.v3+json"
+          Authorization: `Bearer ${this.token}`,
+          Accept: "application/vnd.github.v3+json",
+          "User-Agent": `"${this.repo}/1.0"`
         }
       });
 
@@ -198,8 +273,11 @@ class DataService {
       }
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          `GitHub API error: ${response.status} ${response.statusText}`
+          `GitHub API error: ${response.status} ${
+            response.statusText
+          } - ${errorData.message || ""}`
         );
       }
 
@@ -212,7 +290,6 @@ class DataService {
     }
   }
 
-  // Save data to GitHub
   async saveDataToGitHub(data, message = "Update puppy data") {
     if (!this.connectionStatus.connected) {
       throw new Error("Not connected to GitHub");
@@ -226,8 +303,9 @@ class DataService {
       try {
         const currentFile = await fetch(`${this.baseUrl}/puppy-data.json`, {
           headers: {
-            Authorization: `bearer ${this.token}`,
-            Accept: "application/vnd.github.v3+json"
+            Authorization: `Bearer ${this.token}`,
+            Accept: "application/vnd.github.v3+json",
+            "User-Agent": `"${this.repo}/1.0"`
           }
         });
 
@@ -248,15 +326,16 @@ class DataService {
       const response = await fetch(`${this.baseUrl}/puppy-data.json`, {
         method: "PUT",
         headers: {
-          Authorization: `bearer ${this.token}`,
+          Authorization: `Bearer ${this.token}`, // Changed to Bearer
           Accept: "application/vnd.github.v3+json",
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "User-Agent": `"${this.repo}/1.0"`
         },
         body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(
           `Failed to save data: ${response.status} - ${errorData.message ||
             response.statusText}`

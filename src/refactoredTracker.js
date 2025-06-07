@@ -46,12 +46,12 @@ const PuppyTracker = () => {
         {/* Date/time controls */}
         <div className="flex items-center gap-4 text-gray-600">
           <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          </div>
-          <div className="flex items-center gap-1">
             <Cake className="w-4 h-4" />
             <span className="text-md font-small">04/14/2025</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Clock className="w-4 h-4" />
+            <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="w-4 h-4" title="selectedDate"/>

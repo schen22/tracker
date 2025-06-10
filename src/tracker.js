@@ -245,7 +245,7 @@ const PuppyTracker = () => {
     <div className="max-w-6xl mx-auto p-4 bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-          🐕 Artoo Tracker
+          🐕 Yumi Tracker
         </h1>
         <div className="flex items-center gap-4 text-gray-600">
           <div className="flex items-center gap-1">

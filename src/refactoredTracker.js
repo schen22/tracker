@@ -29,7 +29,7 @@ const PuppyTracker = () => {
       {},
       birthDate
     );
-    return new PuppyProfile("Artoo", ageWeeks);
+    return new PuppyProfile("Yumi", ageWeeks);
   });
 
   // UI state
@@ -204,7 +204,7 @@ const PuppyTracker = () => {
 
   // Update puppy age when profile changes
   const handleAgeChange = newAge => {
-    setPuppyProfile(new PuppyProfile("Artoo", parseInt(newAge)));
+    setPuppyProfile(new PuppyProfile("Yumi", parseInt(newAge)));
   };
 
   // log and track data consistency

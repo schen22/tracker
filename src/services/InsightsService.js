@@ -44,47 +44,52 @@ export class InsightsService {
   getHourlyTrends(days = 7) {
     const dateRange = this._getDateRange(days);
     const allData = this.dataService.getData();
-    const allLogs = (allData.pottyLogs || []).filter(log => {
-      if (log.timestamp) {
-        return dateRange.includes(log.timestamp.split("T")[0]);
-      } else {
-        return false;
-      }
-    });
+    const allLogs = (allData.pottyLogs || []).filter(
+      log => log.timestamp && dateRange.includes(log.timestamp.split("T")[0])
+    );
 
     return Array.from({ length: 24 }, (_, hour) => {
       const hourStr = hour.toString().padStart(2, "0");
       const hourLogs = allLogs.filter(log => {
-        let logHour;
-        if (log.timestamp) {
-          logHour = new Date(log.timestamp).getHours();
-        } else {
-          return false;
-        }
-        return logHour === hour;
+        if (!log.timestamp) return false;
+        return new Date(log.timestamp).getHours() === hour;
       });
 
-      return {
-        hour: `${hourStr}:00`,
-        successful: hourLogs.filter(log => {
-          if (log.hasOwnProperty("isSuccessful")) {
-            return log.isSuccessful;
-          }
-          return log.type !== "accident" && log.location === "outside";
-        }).length,
-        accidents: hourLogs.filter(log => {
-          if (log.hasOwnProperty("isAccident")) {
-            return log.isAccident;
-          }
-          return (
-            log.type === "accident" ||
+      const successful = hourLogs.filter(log =>
+        log.hasOwnProperty("isSuccessful")
+          ? log.isSuccessful
+          : log.type !== "accident" && log.location === "outside"
+      ).length;
+
+      const accidents = hourLogs.filter(log =>
+        log.hasOwnProperty("isAccident")
+          ? log.isAccident
+          : log.type === "accident" ||
             log.location === "inside" ||
             log.location === "crate"
-          );
-        }).length,
+      ).length;
+
+      const hourTime = new Date();
+      hourTime.setHours(hour, 0, 0, 0);
+
+      return {
+        hour: hourTime.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true
+        }),
+        successful,
+        accidents,
         total: hourLogs.length
       };
-    }).filter(data => data.total > 0);
+    })
+      .filter(data => data.total > 0)
+      .sort((a, b) => {
+        // Extract hour number from locale time string for sorting
+        const hourA = new Date(`1970-01-01 ${a.hour}`).getHours();
+        const hourB = new Date(`1970-01-01 ${b.hour}`).getHours();
+        return hourA - hourB;
+      });
   }
 
   getDailyHourlyActivity(date) {

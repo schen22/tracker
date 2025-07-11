@@ -1,3 +1,5 @@
+import DateTimeUtils from '../utils/DateTimeUtils.js';
+
 class DataService {
   constructor() {
     // GitHub API configuration
@@ -528,7 +530,7 @@ class DataService {
       if (log.date) {
         return log.date === dateString;
       } else if (log.timestamp) {
-        return log.timestamp.startsWith(dateString);
+        return DateTimeUtils.toLocalDateString(log.timestamp) === dateString;
       }
       return false;
     });
@@ -541,7 +543,7 @@ class DataService {
       if (activity.date) {
         return activity.date === dateString;
       } else if (activity.timestamp) {
-        return activity.timestamp.startsWith(dateString);
+        return DateTimeUtils.toLocalDateString(activity.timestamp) === dateString;
       }
       return false;
     });

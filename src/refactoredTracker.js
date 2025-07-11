@@ -176,6 +176,7 @@ const PuppyTracker = () => {
     setLastRefresh(new Date());
   };
 
+
   const handleClearError = () => {
     dataService.clearError();
   };
@@ -216,7 +217,7 @@ const PuppyTracker = () => {
       selectedDate,
       filteredPottyLogsCount: filteredPottyLogs.length,
       filteredActivitiesCount: filteredActivities.length,
-      pendingOperations: pendingOperations.size // ADD: Track pending operations
+      pendingOperations: pendingOperations.size
     });
   }, [
     data,

@@ -16,7 +16,11 @@ All changes tracked with full git history.
 
 ## tests
 
-1. `npm test -- --testPathPattern=InsightsService.test.js`
+1. Services
+   `npm test -- --testPathPattern=InsightsService.test.js --watchAll=false`
+2. UI
+   `npm test -- --testPathPattern=DateTimeUtils.ui.test.js --watchAll=false`
+   `npm test -- --testPathPattern="DateTimeUtils|TodaySummary" --watchAll=false`
 
 ## tradeoffs:
 

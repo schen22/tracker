@@ -417,9 +417,10 @@ class DataService {
         type, // 'pee', 'poop', 'accident'
         location, // 'outside', 'inside', 'crate'
         notes,
-        // Simplified boolean logic: accident = not outside, success = outside
-        isAccident: location !== "outside",
-        isSuccessful: location === "outside"
+        // Add computed fields for consistency
+        isSuccessful: type !== "accident" && location === "outside",
+        isAccident:
+          type === "accident" || location === "inside" || location === "crate"
       };
 
       const updatedData = {
@@ -565,7 +566,7 @@ class DataService {
       if (log.hasOwnProperty("isSuccessful")) {
         return log.isSuccessful;
       }
-      return log.location === "outside";
+      return log.type !== "accident" && log.location === "outside";
     });
 
     return Math.round((successfulLogs.length / logs.length) * 100);

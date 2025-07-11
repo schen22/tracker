@@ -26,7 +26,7 @@ export class InsightsService {
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split("T")[0];
+      const dateStr = DateTimeUtils.toLocalDateString(date);
 
       const dayLogs = this.dataService.getPottyLogsByDate(dateStr);
       const successRate = this.getSuccessRateForDate(dateStr);
@@ -47,7 +47,7 @@ export class InsightsService {
     const dateRange = this._getDateRange(days);
     const allData = this.dataService.getData();
     const allLogs = (allData.pottyLogs || []).filter(
-      log => log.timestamp && dateRange.includes(log.timestamp.split("T")[0])
+      log => log.timestamp && dateRange.includes(DateTimeUtils.toLocalDateString(log.timestamp))
     );
 
     return Array.from({ length: 24 }, (_, hour) => {
@@ -148,7 +148,7 @@ export class InsightsService {
 
     const recentLogs = (allData.pottyLogs || []).filter(log => {
       if (log.timestamp) {
-        return dateRange.includes(log.timestamp.split("T")[0]);
+        return dateRange.includes(DateTimeUtils.toLocalDateString(log.timestamp));
       }
       return false;
     });
@@ -212,7 +212,7 @@ export class InsightsService {
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      dateRange.push(date.toISOString().split("T")[0]);
+      dateRange.push(DateTimeUtils.toLocalDateString(date));
     }
     return dateRange;
   }

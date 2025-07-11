@@ -1,3 +1,5 @@
+import DateTimeUtils from '../utils/DateTimeUtils.js';
+
 export class InsightsService {
   constructor(dataService) {
     this.dataService = dataService;

@@ -3,6 +3,7 @@ import DataService from "./services/DataService";
 import { InsightsService } from "./services/InsightsService";
 import { MilestoneService } from "./services/MilestoneService";
 import { PuppyProfile } from "./models/PuppyData";
+import DateTimeUtils from "./utils/DateTimeUtils";
 import QuickActions from "./components/QuickActions";
 import TodaySummary from "./components/TodaySummary";
 import TrendAnalysis from "./components/TrendAnalysis";
@@ -34,7 +35,7 @@ const PuppyTracker = () => {
 
   // UI state
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
+    DateTimeUtils.today()
   );
   const [currentTime, setCurrentTime] = useState(new Date());
 

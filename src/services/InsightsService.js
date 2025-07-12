@@ -1,4 +1,4 @@
-import DateTimeUtils from '../utils/DateTimeUtils.js';
+import DateTimeUtils from "../utils/DateTimeUtils.js";
 
 export class InsightsService {
   constructor(dataService) {
@@ -47,11 +47,13 @@ export class InsightsService {
     const dateRange = this._getDateRange(days);
     const allData = this.dataService.getData();
     const allLogs = (allData.pottyLogs || []).filter(
-      log => log.timestamp && dateRange.includes(DateTimeUtils.toLocalDateString(log.timestamp))
+      log =>
+        log.timestamp &&
+        dateRange.includes(DateTimeUtils.toLocalDateString(log.timestamp))
     );
 
     return Array.from({ length: 24 }, (_, hour) => {
-      const hourStr = hour.toString().padStart(2, "0");
+      // const hourStr = hour.toString().padStart(2, "0");
       const hourLogs = allLogs.filter(log => {
         if (!log.timestamp) return false;
         return new Date(log.timestamp).getHours() === hour;
@@ -148,7 +150,9 @@ export class InsightsService {
 
     const recentLogs = (allData.pottyLogs || []).filter(log => {
       if (log.timestamp) {
-        return dateRange.includes(DateTimeUtils.toLocalDateString(log.timestamp));
+        return dateRange.includes(
+          DateTimeUtils.toLocalDateString(log.timestamp)
+        );
       }
       return false;
     });

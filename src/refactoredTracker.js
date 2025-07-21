@@ -7,6 +7,7 @@ import DateTimeUtils from "./utils/DateTimeUtils";
 import QuickActions from "./components/QuickActions";
 import TodaySummary from "./components/TodaySummary";
 import DetailedLogs from "./components/DetailedLogs";
+import AllTimeMetrics from "./components/AllTimeMetrics";
 import TrendAnalysis from "./components/TrendAnalysis";
 import MilestoneCard from "./components/MilestoneCard";
 import {
@@ -35,9 +36,7 @@ const PuppyTracker = () => {
   });
 
   // UI state
-  const [selectedDate, setSelectedDate] = useState(
-    DateTimeUtils.today()
-  );
+  const [selectedDate, setSelectedDate] = useState(DateTimeUtils.today());
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Data service state - synced with service
@@ -177,7 +176,6 @@ const PuppyTracker = () => {
     dataService.loadData();
     setLastRefresh(new Date());
   };
-
 
   const handleClearError = () => {
     dataService.clearError();
@@ -403,7 +401,7 @@ const PuppyTracker = () => {
         {/* Today's Summary Section */}
         <div className="space-y-6 col-span-full bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-2xl font-bold text-gray-800">Today's Summary</h2>
-          
+
           <div className="flex flex-col lg:flex-row lg:gap-6 space-y-6 lg:space-y-0">
             <div className="lg:flex-1">
               <TodaySummary
@@ -434,6 +432,13 @@ const PuppyTracker = () => {
           pottyLogs={data.pottyLogs}
           activities={data.activities}
         />
+
+        <div className="col-span-full">
+          <AllTimeMetrics
+            pottyLogs={data.pottyLogs}
+            activities={data.activities}
+          />
+        </div>
       </div>
     </div>
   );

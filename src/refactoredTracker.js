@@ -6,6 +6,7 @@ import { PuppyProfile } from "./models/PuppyData";
 import DateTimeUtils from "./utils/DateTimeUtils";
 import QuickActions from "./components/QuickActions";
 import TodaySummary from "./components/TodaySummary";
+import DetailedLogs from "./components/DetailedLogs";
 import TrendAnalysis from "./components/TrendAnalysis";
 import MilestoneCard from "./components/MilestoneCard";
 import {
@@ -399,17 +400,33 @@ const PuppyTracker = () => {
           disabled={isLoading || isOperationPending}
         />
 
-        <TodaySummary
-          pottyLogs={filteredPottyLogs}
-          activities={filteredActivities}
-          successRate={successRate}
-          onDeletePottyLog={handleDeletePottyLog}
-          onDeleteActivity={handleDeleteActivity}
-          canDelete={
-            (connectionStatus.connected || !connectionStatus.checking) &&
-            !isOperationPending
-          }
-        />
+        {/* Today's Summary Section */}
+        <div className="space-y-6 col-span-full bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-2xl font-bold text-gray-800">Today's Summary</h2>
+          
+          <div className="flex flex-col lg:flex-row lg:gap-6 space-y-6 lg:space-y-0">
+            <div className="lg:flex-1">
+              <TodaySummary
+                pottyLogs={filteredPottyLogs}
+                activities={filteredActivities}
+                successRate={successRate}
+              />
+            </div>
+
+            <div className="lg:flex-1">
+              <DetailedLogs
+                pottyLogs={filteredPottyLogs}
+                activities={filteredActivities}
+                onDeletePottyLog={handleDeletePottyLog}
+                onDeleteActivity={handleDeleteActivity}
+                canDelete={
+                  (connectionStatus.connected || !connectionStatus.checking) &&
+                  !isOperationPending
+                }
+              />
+            </div>
+          </div>
+        </div>
 
         <TrendAnalysis
           insightsService={insightsService}

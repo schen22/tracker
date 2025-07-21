@@ -124,6 +124,14 @@ const AllTimeMetrics = ({ pottyLogs, activities }) => {
         ? Math.round((successfulEvents / totalPottyEvents) * 100)
         : 0;
 
+    // Grand total of all events (accidents are already included in pees/poops)
+    const grandTotal =
+      totalPottyEvents + // This already includes all pees and poops (successful + accidents)
+      totalFeeding +
+      totalPlay +
+      totalTraining +
+      totalCrate;
+
     return {
       totals: {
         totalPees,
@@ -135,7 +143,8 @@ const AllTimeMetrics = ({ pottyLogs, activities }) => {
         totalTraining,
         totalCrate,
         totalActivities,
-        overallSuccessRate
+        overallSuccessRate,
+        grandTotal
       },
       medians: {
         medianPeesPerDay,
@@ -177,6 +186,23 @@ const AllTimeMetrics = ({ pottyLogs, activities }) => {
       <h2 className="text-xl font-semibold text-gray-800 mb-6">
         All-Time Metrics
       </h2>
+
+      {/* Grand Total */}
+      <div className="mb-8">
+        <div className="bg-gradient-to-r from-purple-100 to-indigo-100 p-6 rounded-lg text-center">
+          <div className="text-4xl mb-2">🏆</div>
+          <div className="text-4xl font-bold text-purple-600">
+            {metrics.totals.grandTotal}
+          </div>
+          <div className="text-lg font-semibold text-gray-800">
+            Total Events Logged
+          </div>
+          <div className="text-sm text-gray-600 mt-2">
+            All Bathroom and Activity Events
+          </div>
+        </div>
+      </div>
+
       {/* Total Counts */}
       <div className="mb-8">
         <h3 className="text-lg font-semibold text-gray-700 mb-4">
@@ -207,7 +233,7 @@ const AllTimeMetrics = ({ pottyLogs, activities }) => {
           <MetricCard
             title="Success Rate"
             value={`${metrics.totals.overallSuccessRate}%`}
-            subtitle={`${metrics.totals.totalPottyEvents} total events`}
+            subtitle={`${metrics.totals.totalPottyEvents} bathroom events`}
             icon="🎯"
             bgColor="bg-purple-50"
             textColor="text-purple-600"

@@ -2,11 +2,21 @@ import React from "react";
 
 const MetricCard = ({ title, value, subtitle, icon, bgColor, textColor }) => {
   return (
-    <div className={`${bgColor} p-4 rounded-lg text-center`}>
-      <div className="text-2xl mb-2">{icon}</div>
-      <div className={`text-xl font-bold ${textColor}`}>{value}</div>
+    <div className={`${bgColor} p-2 rounded-lg text-center`}>
+      <div className="text-l mb-1">{icon}</div>
+      <div className={`text-m font-bold ${textColor}`}>{value}</div>
       <div className="text-sm text-gray-700 font-medium">{title}</div>
       {subtitle && <div className="text-xs text-gray-600 mt-1">{subtitle}</div>}
+    </div>
+  );
+};
+
+const HeroMetric = ({ title, value, icon, textColor = "text-gray-800" }) => {
+  return (
+    <div className="text-center">
+      <div className="text-2xl mb-1">{icon}</div>
+      <div className={`text-3xl font-bold ${textColor}`}>{value}</div>
+      <div className="text-sm text-gray-600 font-medium">{title}</div>
     </div>
   );
 };
@@ -124,6 +134,24 @@ const AllTimeMetrics = ({ pottyLogs, activities }) => {
         ? Math.round((successfulEvents / totalPottyEvents) * 100)
         : 0;
 
+    // Days since last accident calculation
+    const daysSinceLastAccident = () => {
+      const accidents = pottyLogs
+        .filter(log => log.location === "inside")
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      if (accidents.length === 0) return "Never";
+
+      const lastAccident = new Date(accidents[0].timestamp);
+      const today = new Date();
+      const diffTime = Math.abs(today - lastAccident);
+      const daysDiff = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      return daysDiff;
+    };
+
+    const daysSinceAccident = daysSinceLastAccident();
+
     // Grand total of all events (accidents are already included in pees/poops)
     const grandTotal =
       totalPottyEvents + // This already includes all pees and poops (successful + accidents)
@@ -144,7 +172,8 @@ const AllTimeMetrics = ({ pottyLogs, activities }) => {
         totalCrate,
         totalActivities,
         overallSuccessRate,
-        grandTotal
+        grandTotal,
+        daysSinceAccident
       },
       medians: {
         medianPeesPerDay,
@@ -187,18 +216,32 @@ const AllTimeMetrics = ({ pottyLogs, activities }) => {
         All-Time Metrics
       </h2>
 
-      {/* Grand Total */}
-      <div className="mb-8">
-        <div className="bg-gradient-to-r from-purple-100 to-indigo-100 p-6 rounded-lg text-center">
-          <div className="text-4xl mb-2">🏆</div>
-          <div className="text-4xl font-bold text-purple-600">
-            {metrics.totals.grandTotal}
-          </div>
-          <div className="text-lg font-semibold text-gray-800">
-            Total Events Logged
-          </div>
-          <div className="text-sm text-gray-600 mt-2">
-            All Bathroom and Activity Events
+      {/* Hero Metrics */}
+      <div className="mb-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="grid grid-cols-3 gap-8">
+            <HeroMetric
+              title="Total Events Logged"
+              value={metrics.totals.grandTotal}
+              icon="🏆"
+              textColor="text-blue-600"
+            />
+            <HeroMetric
+              title="Success Rate"
+              value={`${metrics.totals.overallSuccessRate}%`}
+              icon="🎯"
+              textColor="text-purple-600"
+            />
+            <HeroMetric
+              title="Days Since Last Accident"
+              value={
+                metrics.totals.daysSinceAccident === "Never"
+                  ? "∞"
+                  : metrics.totals.daysSinceAccident
+              }
+              icon="🛡️"
+              textColor="text-green-600"
+            />
           </div>
         </div>
       </div>
@@ -229,14 +272,6 @@ const AllTimeMetrics = ({ pottyLogs, activities }) => {
             icon="⚠️"
             bgColor="bg-red-50"
             textColor="text-red-600"
-          />
-          <MetricCard
-            title="Success Rate"
-            value={`${metrics.totals.overallSuccessRate}%`}
-            subtitle={`${metrics.totals.totalPottyEvents} bathroom events`}
-            icon="🎯"
-            bgColor="bg-purple-50"
-            textColor="text-purple-600"
           />
           <MetricCard
             title="Feeding Sessions"

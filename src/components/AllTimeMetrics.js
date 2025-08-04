@@ -227,7 +227,7 @@ const AllTimeMetrics = ({ pottyLogs, activities }) => {
               textColor="text-blue-600"
             />
             <HeroMetric
-              title="Success Rate"
+              title="Overall Success Rate"
               value={`${metrics.totals.overallSuccessRate}%`}
               icon="🎯"
               textColor="text-purple-600"

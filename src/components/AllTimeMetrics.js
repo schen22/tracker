@@ -107,6 +107,28 @@ const AllTimeMetrics = ({ pottyLogs, activities }) => {
     const dailyCountsArray = Object.values(dailyCounts);
     const totalDays = dailyCountsArray.length || 1;
 
+    // Calculate longest streak of no accidents efficiently
+    const calculateLongestStreak = () => {
+      if (dailyCountsArray.length === 0) return 0;
+      
+      const sortedDates = Object.keys(dailyCounts).sort((a, b) => new Date(a) - new Date(b));
+      let longestStreak = 0;
+      let currentStreak = 0;
+      
+      sortedDates.forEach(date => {
+        if (dailyCounts[date].accidents === 0) {
+          currentStreak++;
+          longestStreak = Math.max(longestStreak, currentStreak);
+        } else {
+          currentStreak = 0;
+        }
+      });
+      
+      return longestStreak;
+    };
+
+    const longestStreak = calculateLongestStreak();
+
     // Calculate medians
     const medianPeesPerDay = calculateMedian(dailyCountsArray.map(d => d.pees));
     const medianPoopsPerDay = calculateMedian(
@@ -173,7 +195,8 @@ const AllTimeMetrics = ({ pottyLogs, activities }) => {
         totalActivities,
         overallSuccessRate,
         grandTotal,
-        daysSinceAccident
+        daysSinceAccident,
+        longestStreak
       },
       medians: {
         medianPeesPerDay,
@@ -300,6 +323,14 @@ const AllTimeMetrics = ({ pottyLogs, activities }) => {
             icon="🏠"
             bgColor="bg-gray-50"
             textColor="text-gray-600"
+          />
+          <MetricCard
+            title="Longest Streak"
+            value={metrics.totals.longestStreak}
+            subtitle="Days with no accidents"
+            icon="🔥"
+            bgColor="bg-emerald-50"
+            textColor="text-emerald-600"
           />
         </div>
       </div>
